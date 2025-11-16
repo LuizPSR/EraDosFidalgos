@@ -7,6 +7,9 @@ set(PROJECT_NAME "EraDosFidalgos")
 project(${PROJECT_NAME})
 
 find_package(PkgConfig REQUIRED)
+find_package(SDL3 REQUIRED)
+find_package(SDL3_IMAGE REQUIRED)
+
 pkg_check_modules(SDL3 REQUIRED sdl3)
 pkg_check_modules(SDL3_IMAGE REQUIRED sdl3-image)
 pkg_check_modules(GLEW REQUIRED glew)
