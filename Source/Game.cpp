@@ -1,384 +1,218 @@
-// ----------------------------------------------------------------
-// From Game Programming in C++ by Sanjay Madhav
-// Copyright (C) 2017 Sanjay Madhav. All rights reserved.
-// 
-// Released under the BSD License
-// See LICENSE in root directory for full details.
-// ----------------------------------------------------------------
-
 #include <algorithm>
 #include <vector>
 #include <map>
 #include <fstream>
-#include "CSV.h"
+#include <SDL3/SDL.h>
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_opengl3.h>
+
 #include "Game.h"
-#include "Components/Drawing/DrawComponent.h"
-#include "Components/Physics/RigidBodyComponent.h"
 #include "Random.h"
-#include "Actors/Actor.h"
+#include "Components/Camera.h"
+#include "Renderer/Renderer.h"
+#include "Systems/ChessBoard.h"
 
-Game::Game()
-        :mWindow(nullptr)
-        ,mRenderer(nullptr)
-        ,mTicksCount(0)
-        ,mIsRunning(true)
-        ,mIsDebugging(true)
-        ,mUpdatingActors(false)
-        ,mCameraPos(Vector2::Zero)
-        ,mMario(nullptr)
-        ,mLevelData(nullptr)
-{
-
-}
-
-bool Game::Initialize()
+bool Initialize(const flecs::world &ecs)
 {
     Random::Init();
-    mIsRunning = true;
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO) == false)
     {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
         return false;
     }
 
-    mWindow = SDL_CreateWindow("TP3: Super Mario Bros", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
-    if (!mWindow)
+    SDL_Window *window = SDL_CreateWindow("Era dos Fidalgos", SDL_WINDOW_MAXIMIZED, SDL_WINDOW_MAXIMIZED, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    if (!window)
     {
         SDL_Log("Failed to create window: %s", SDL_GetError());
         return false;
     }
 
-    mRenderer = new Renderer(mWindow);
-    mRenderer->Initialize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    SDL_SetWindowMinimumSize(window, 400, 300);
 
-    // Init all game actors
-    InitializeActors();
+    ecs.component<Renderer>()
+        .add(flecs::Singleton)
+        .emplace<Renderer>(window);
+    auto &renderer = ecs.get_mut<Renderer>();
+    if (renderer.Initialize() == false)
+    {
+        return false;
+    }
 
-    mTicksCount = SDL_GetTicks();
+    ecs.entity<InputState>()
+        .add(flecs::Singleton)
+        .add<InputState>();
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+    ImGui::StyleColorsDark();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplSDL3_InitForOpenGL(window, renderer.mContext);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+
+    // Init ECS
+    RegisterSystems(ecs);
 
     return true;
 }
 
-void Game::InitializeActors()
+void RegisterSystems(const flecs::world &ecs)
 {
-    auto level = LoadLevel("../Assets/Levels/Level1-1/level1-1.csv", 215, 15);
-    if (level == nullptr) {
-        mIsRunning = false;
-        printf("Failure to load level\n");
-    }
-    else {
-        BuildLevel(level, LEVEL_WIDTH, LEVEL_HEIGHT);
-    }
-}
-
-int **Game::LoadLevel(const std::string& fileName, int width, int height)
-{
-
-    std::ifstream file(fileName);
-    if (!file.is_open()) {
-        printf("Failed to open file\n");
-        return nullptr;
-    }
-
-    const auto level = new int*[width];
-    for (int i = 0; i < width; i++)
-        level[i] = new int[height];
-
-    std::string line;
-    int row = 0;
-    while (row < height && std::getline(file, line)) {
-        std::vector<int> rowTiles = CSVHelper::Split(line);
-        if (rowTiles.size() != width)
-            return nullptr;
-
-        for (int j = 0; j < width; j++)
-            level[j][row] = rowTiles.at(j);
-        row++;
-    }
-
-    return row < height-1 ? nullptr : level;
-}
-
-void Game::BuildLevel(int** levelData, int width, int height)
-{
-    new Background(this, "../Assets/Sprites/Background.png");
-
-    auto offset = Vector2::One * TILE_SIZE * .5f;
-    for (int i=0; i < width; i++) {
-        for (int j=0; j < height; j++) {
-            Actor* actor= nullptr;
-            switch (levelData[i][j]) {
-
-                case 0: {
-                    actor = new Block(this, "../Assets/Sprites/Blocks/BlockA.png");
-                    break;
-                }
-
-                case 16: {
-                    mMario = new Mario(this);
-                    actor = mMario;
-                    break;
-                }
-                case 1: {
-                    bool mushroom = false;
-                    if (j>0)
-                        mushroom = levelData[i][j-1] == 13;
-                    actor = new MysteryBlock(this,
-                        "../Assets/Sprites/Blocks/BlockC.png",
-                        "../Assets/Sprites/Blocks/BlockE.png",
-                        mushroom);
-                    break;
-                }
-                case 4: {
-                    auto b = new Block(this, "../Assets/Sprites/Blocks/BlockB.png");
-                    b->SetBreakable(true);
-                    actor = b;
-                    break;
-                }
-                case 8: {
-                    actor = new Block(this, "../Assets/Sprites/Blocks/BlockD.png");
-                    break;
-                }
-
-
-                case 10: {
-                    actor = new Spawner(this, 15 * TILE_SIZE);
-                    break;
-                }
-
-                // Canes
-                case 12: {
-                    actor = new Block(this, "../Assets/Sprites/Blocks/BlockG.png");
-                    break;
-                }
-                case 2: {
-                    actor = new Block(this, "../Assets/Sprites/Blocks/BlockF.png");
-                    break;
-                }
-                case 9: {
-                    actor = new Block(this, "../Assets/Sprites/Blocks/BlockH.png");
-                    break;
-                }
-                case 6: {
-                    actor = new Block(this, "../Assets/Sprites/Blocks/BlockI.png");
-                    break;
-                }
-                default: {
-                    break;
-                }
+    ecs.system("ReadInput")
+        .kind(flecs::OnLoad)
+        .run([](const flecs::iter &it) {
+            ProcessInput(it.world());
+        });
+    ecs.system("StartFrame")
+        .kind(flecs::PreUpdate)
+        .run([](flecs::iter &)
+        {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
+        });
+    ecs.system("UpdateUI")
+        .kind(flecs::OnUpdate)
+        .run([](flecs::iter &it)
+        {
+            ImGui::Begin("Menu");
+            ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::Separator();
+            if (ImGui::Button("Click Me"))
+            {
+                SDL_Log("I've been clicked!");
             }
 
-            if (actor != nullptr) {
-                actor->SetPosition(Vector2(i * Game::TILE_SIZE, j * Game::TILE_SIZE) + offset);
-                actor->SetScale(actor->GetScale() * Vector2(Game::TILE_SIZE, Game::TILE_SIZE));
-                actor->SetRotation(Math::Pi);
+            const flecs::world &ecs = it.world();
+            if (ImGui::Button("Create Scene"))
+            {
+                ChessBoardNS::Initialize(ecs);
             }
-        }
-    }
+            if (ImGui::Button("Destroy Scene"))
+            {
+                ChessBoardNS::Destroy(ecs);
+            }
+
+            it.world().each([](Camera &camera)
+            {
+                ImGui::Text("Camera Position: (%.1f, %.1f, %.1f)", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+                ImGui::Text("Target Position: (%.1f, %.1f, %.1f)", camera.mTarget.x, camera.mTarget.y, camera.mTarget.z);
+                ImGui::SliderFloat("Zoom", &camera.mZoomLevel, camera.mMinZoom, camera.mMaxZoom);
+            });
+
+            ImGui::End();
+        });
+    ecs.system<Renderer>("StartRender")
+        .kind(flecs::PreStore)
+        .each([](Renderer &renderer)
+        {
+            renderer.Clear();
+        });
+
+    ChessBoardNS::RegisterSystems(ecs);
+
+    ecs.system<Renderer>("PresentRender")
+        .kind(flecs::OnStore)
+        .each([](Renderer &renderer)
+        {
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+            renderer.Present();
+        });
 }
 
-void Game::RunLoop()
+void ProcessInput(const flecs::world &ecs)
 {
+    auto &renderer = ecs.get_mut<Renderer>();
+    auto &input = ecs.get_mut<InputState>();
 
-    while (mIsRunning)
-    {
-        // Calculate delta time in seconds
-        float deltaTime = (SDL_GetTicks() - mTicksCount) / 1000.0f;
-        if (deltaTime > 0.05f)
-        {
-            deltaTime = 0.05f;
-        }
+    input.MouseDeltaX = 0.0f;
+    input.MouseDeltaY = 0.0f;
+    input.MouseScrollAmount = 0.0f;
 
-        mTicksCount = SDL_GetTicks();
-
-        ProcessInput();
-        UpdateGame(deltaTime);
-        GenerateOutput();
-
-        // Sleep to maintain frame rate
-        int sleepTime = (1000 / FPS) - (SDL_GetTicks() - mTicksCount);
-        if (sleepTime > 0)
-        {
-            SDL_Delay(sleepTime);
-        }
-    }
-}
-
-void Game::ProcessInput()
-{
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
+        ImGui_ImplSDL3_ProcessEvent(&event);
+
+        const auto &io = ImGui::GetIO();
+        if (io.WantCaptureMouse || io.WantCaptureKeyboard)
+        {
+            if (event.type != SDL_EVENT_QUIT && event.type != SDL_EVENT_WINDOW_RESIZED)
+            {
+                continue;
+            }
+        }
         switch (event.type)
         {
-            case SDL_QUIT:
-                Quit();
+            case SDL_EVENT_QUIT:
+                ecs.quit();
                 break;
+            case SDL_EVENT_WINDOW_RESIZED:
+                {
+                    const int width = event.window.data1;
+                    const int height = event.window.data2;
+                    renderer.UpdateOrthographicMatrix(width, height);
+                }
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            {
+                if (event.button.button == SDL_BUTTON_RIGHT) {
+                    input.IsRightMouseButtonDown = true;
+                    SDL_SetWindowRelativeMouseMode(renderer.mWindow, true);
+                } else if (event.button.button == SDL_BUTTON_MIDDLE) {
+                    input.IsMiddleMouseButtonDown = true;
+                    SDL_SetWindowRelativeMouseMode(renderer.mWindow, true);
+                }
+                break;
+            }
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+            {
+                if (event.button.button == SDL_BUTTON_RIGHT) {
+                    input.IsRightMouseButtonDown = false;
+                    if (!input.IsMiddleMouseButtonDown) {
+                        SDL_SetWindowRelativeMouseMode(renderer.mWindow, false);
+                    }
+                } else if (event.button.button == SDL_BUTTON_MIDDLE) {
+                    input.IsMiddleMouseButtonDown = false;
+                    if (!input.IsRightMouseButtonDown) {
+                        SDL_SetWindowRelativeMouseMode(renderer.mWindow, false);
+                    }
+                }
+                break;
+            }
+            case SDL_EVENT_MOUSE_MOTION:
+            {
+                if (input.IsRightMouseButtonDown || input.IsMiddleMouseButtonDown)
+                {
+                    // Use relative motion for panning
+                    input.MouseDeltaX = (float)event.motion.xrel;
+                    input.MouseDeltaY = (float)event.motion.yrel;
+                }
+                break;
+            }
+            case SDL_EVENT_MOUSE_WHEEL:
+            {
+                auto scrollAmount = (float)event.wheel.y;
+                input.MouseScrollAmount = scrollAmount;
+                break;
+            }
             default:
                 break;
         }
     }
 
-    const Uint8* state = SDL_GetKeyboardState(nullptr);
+    const bool* state = SDL_GetKeyboardState(nullptr);
     if (state[SDL_SCANCODE_ESCAPE]) {
-        Quit();
-        return;
+        ecs.quit();
     }
-    for (const auto actor : mActors)
-    {
-        actor->ProcessInput(state);
-    }
-}
-
-void Game::UpdateGame(float deltaTime)
-{
-    // Update all actors and pending actors
-    UpdateActors(deltaTime);
-
-    // Update camera position
-    UpdateCamera();
-}
-
-void Game::UpdateActors(float deltaTime)
-{
-    mUpdatingActors = true;
-    for (auto actor : mActors)
-    {
-        actor->Update(deltaTime);
-    }
-    mUpdatingActors = false;
-
-    for (auto pending : mPendingActors)
-    {
-        mActors.emplace_back(pending);
-    }
-    mPendingActors.clear();
-
-    std::vector<Actor*> deadActors;
-    for (auto actor : mActors)
-    {
-        if (actor->GetState() == ActorState::Destroy)
-        {
-            deadActors.emplace_back(actor);
-        }
-    }
-
-    for (auto actor : deadActors)
-    {
-        delete actor;
-    }
-}
-
-void Game::UpdateCamera()
-{
-    auto pos = mMario->GetPosition();
-    if ((mCameraPos.x < pos.x - TILE_SIZE * 10) && (pos.x < TILE_SIZE * (Game::LEVEL_WIDTH  - 10.f)))
-        mCameraPos.Set(pos.x - TILE_SIZE * 10, mCameraPos.y);
-    if (mCameraPos.y > pos.y - TILE_SIZE * (5.f))
-        mCameraPos.Set(mCameraPos.x, pos.y - TILE_SIZE * 5);
-    else if (mCameraPos.y < 0 && mCameraPos.y < pos.y - TILE_SIZE * 5)
-        mCameraPos.Set(mCameraPos.x, pos.y - TILE_SIZE * 5);
-}
-
-void Game::AddActor(Actor* actor)
-{
-    if (mUpdatingActors)
-    {
-        mPendingActors.emplace_back(actor);
-    }
-    else
-    {
-        mActors.emplace_back(actor);
-    }
-}
-
-void Game::RemoveActor(Actor* actor)
-{
-    auto iter = std::find(mPendingActors.begin(), mPendingActors.end(), actor);
-    if (iter != mPendingActors.end())
-    {
-        // Swap to end of vector and pop off (avoid erase copies)
-        std::iter_swap(iter, mPendingActors.end() - 1);
-        mPendingActors.pop_back();
-    }
-
-    iter = std::find(mActors.begin(), mActors.end(), actor);
-    if (iter != mActors.end())
-    {
-        // Swap to end of vector and pop off (avoid erase copies)
-        std::iter_swap(iter, mActors.end() - 1);
-        mActors.pop_back();
-    }
-}
-
-void Game::AddDrawable(class DrawComponent *drawable)
-{
-    mDrawables.emplace_back(drawable);
-
-    std::sort(mDrawables.begin(), mDrawables.end(),[](DrawComponent* a, DrawComponent* b) {
-        return a->GetDrawOrder() < b->GetDrawOrder();
-    });
-}
-
-void Game::RemoveDrawable(class DrawComponent *drawable)
-{
-    auto iter = std::find(mDrawables.begin(), mDrawables.end(), drawable);
-    mDrawables.erase(iter);
-}
-
-void Game::AddCollider(class AABBColliderComponent* collider)
-{
-    mColliders.emplace_back(collider);
-}
-
-void Game::RemoveCollider(AABBColliderComponent* collider)
-{
-    auto iter = std::find(mColliders.begin(), mColliders.end(), collider);
-    mColliders.erase(iter);
-}
-
-void Game::GenerateOutput()
-{
-    // Clear back buffer
-    mRenderer->Clear();
-
-    for (auto drawable : mDrawables)
-    {
-        drawable->Draw(mRenderer);
-
-        if(mIsDebugging)
-        {
-           // Call draw for actor components
-              for (auto comp : drawable->GetOwner()->GetComponents())
-              {
-                comp->DebugDraw(mRenderer);
-              }
-        }
-    }
-
-    // Swap front buffer and back buffer
-    mRenderer->Present();
-}
-
-void Game::Shutdown()
-{
-    while (!mActors.empty()) {
-        delete mActors.back();
-    }
-
-    // Delete level data
-    if (mLevelData) {
-        for (int i = 0; i < LEVEL_HEIGHT; ++i) {
-            delete[] mLevelData[i];
-        }
-        delete[] mLevelData;
-        mLevelData = nullptr;
-    }
-
-    mRenderer->Shutdown();
-    delete mRenderer;
-    mRenderer = nullptr;
-
-    SDL_DestroyWindow(mWindow);
-    SDL_Quit();
 }

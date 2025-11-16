@@ -20,16 +20,15 @@ enum BiomeType {
     Wasteland,
 };
 
-class MapTile : public Actor
+class MapTile
 {
 public:
     explicit MapTile(Game* game, TerrainType terrainType, BiomeType biomeType);
-    void OnUpdate(float deltaTime) override;
+    void OnUpdate(float deltaTime);
 
     [[nodiscard]] TerrainType GetTerrain() const {return mTerrain;};
     [[nodiscard]] BiomeType GetBiome() const {return mBiome;};
 protected:
     TerrainType mTerrain;
     BiomeType mBiome;
-    AABBColliderComponent* mHitbox;
 };

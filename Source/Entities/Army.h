@@ -20,7 +20,7 @@ public:
     MapTile* homeland;
 };
 
-class Army : public Actor {
+class Army {
 public:
     explicit Army(Game* game);
     ~Army() override;

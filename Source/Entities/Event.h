@@ -2,7 +2,7 @@
 #include "Actor.h"
 
 
-class Event : public Actor {
+class Event {
 
 public:
     explicit Event(Game* game);

@@ -1,8 +1,7 @@
 #pragma once
 #include <string>
-#include <vector>
 #include <unordered_map>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "../Math.h"
 #include "VertexArray.h"
 #include "Texture.h"
@@ -13,13 +12,12 @@ enum class RendererMode
     LINES
 };
 
-class Renderer
+struct Renderer
 {
-public:
-	Renderer(SDL_Window* window);
+	explicit Renderer(SDL_Window* window);
 	~Renderer();
 
-	bool Initialize(float width, float height);
+	bool Initialize();
 	void Shutdown();
 
     void DrawRect(const Vector2 &position, const Vector2 &size,  float rotation,
@@ -37,31 +35,32 @@ public:
     void Clear();
     void Present();
 
-    // Getters
     class Texture* GetTexture(const std::string& fileName);
-	class Shader* GetBaseShader() const { return mBaseShader; }
 
-private:
+	void UpdateOrthographicMatrix(int width, int height);
+
+	Vector2 GetWindowSize() const;
+
+	// OpenGL context
+	SDL_GLContext mContext;
+
     void Draw(RendererMode mode, const Matrix4 &modelMatrix, const Vector2 &cameraPos, VertexArray *vertices,
               const Vector3 &color,  Texture *texture = nullptr, const Vector4 &textureRect = Vector4::UnitRect, float textureFactor = 1.0f);
 
 	bool LoadShaders();
     void CreateSpriteVerts();
 
-	// Game
-	class Game* mGame;
-
 	// Basic shader
 	class Shader* mBaseShader;
+
+	// Chess Shader
+	class Shader* mChessShader;
 
     // Sprite vertex array
     class VertexArray *mSpriteVerts;
 
 	// Window
 	SDL_Window* mWindow;
-
-	// OpenGL context
-	SDL_GLContext mContext;
 
 	// Ortho projection for 2D shaders
 	Matrix4 mOrthoProjection;

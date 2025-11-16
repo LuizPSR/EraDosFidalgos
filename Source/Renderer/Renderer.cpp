@@ -5,12 +5,12 @@
 #include "Texture.h"
 
 Renderer::Renderer(SDL_Window *window)
-: mBaseShader(nullptr)
-, mWindow(window)
-, mContext(nullptr)
-, mOrthoProjection(Matrix4::Identity)
+    : mContext(nullptr)
+      , mBaseShader(nullptr)
+      , mSpriteVerts(nullptr)
+      , mWindow(window)
+      , mOrthoProjection(Matrix4::Identity)
 {
-
 }
 
 Renderer::~Renderer()
@@ -19,11 +19,15 @@ Renderer::~Renderer()
     mSpriteVerts = nullptr;
 }
 
-bool Renderer::Initialize(float width, float height)
+bool Renderer::Initialize()
 {
+    // Create an OpenGL context
+    mContext = SDL_GL_CreateContext(mWindow);
+    SDL_GL_MakeCurrent(mWindow, mContext);
+
     // Specify version 3.3 (core profile)
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     // Enable double buffering
@@ -32,11 +36,11 @@ bool Renderer::Initialize(float width, float height)
     // Force OpenGL to use hardware acceleration
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
-    // Turn on vsync
-    SDL_GL_SetSwapInterval(1);
-
-    // Create an OpenGL context
-    mContext = SDL_GL_CreateContext(mWindow);
+    // Turn off vsync
+    if (SDL_GL_SetSwapInterval(0) == false)
+    {
+        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Warning: Unable to disable VSync: %s", SDL_GetError());
+    }
 
     // Initialize GLEW
     glewExperimental = GL_TRUE;
@@ -45,11 +49,11 @@ bool Renderer::Initialize(float width, float height)
         return false;
     }
 
-	// Make sure we can create/compile shaders
-	if (!LoadShaders()) {
-		SDL_Log("Failed to load shaders.");
-		return false;
-	}
+    // Make sure we can create/compile shaders
+    if (!LoadShaders()) {
+        SDL_Log("Failed to load shaders.");
+        return false;
+    }
 
     // Create quad for drawing sprites
     CreateSpriteVerts();
@@ -61,9 +65,9 @@ bool Renderer::Initialize(float width, float height)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Create orthografic projection matrix
-    mOrthoProjection = Matrix4::CreateOrtho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
-    mBaseShader->SetMatrixUniform("uOrthoProj", mOrthoProjection);
+    // Create orthographic projection matrix
+    const auto &sz = GetWindowSize();
+    UpdateOrthographicMatrix(sz.x, sz.y);
 
     // Create the texture uniform
     mBaseShader->SetIntegerUniform("uTexture", 0);
@@ -87,14 +91,95 @@ void Renderer::Shutdown()
     mBaseShader->Unload();
     delete mBaseShader;
 
-    SDL_GL_DeleteContext(mContext);
-	SDL_DestroyWindow(mWindow);
+    mChessShader->Unload();
+    delete mChessShader;
+
+    SDL_GL_DestroyContext(mContext);
+    SDL_DestroyWindow(mWindow);
+}
+
+void Renderer::DrawRect(const Vector2 &position, const Vector2 &size, float rotation, const Vector3 &color,
+                        const Vector2 &cameraPos, RendererMode mode)
+{
+    Matrix4 model = Matrix4::CreateScale(Vector3(size.x, size.y, 1.0f)) *
+        Matrix4::CreateRotationZ(rotation) *
+        Matrix4::CreateTranslation(Vector3(position.x, position.y, 0.0f));
+
+    Draw(mode, model, cameraPos, mSpriteVerts, color);
+}
+
+void Renderer::DrawTexture(const Vector2 &position, const Vector2 &size, float rotation, const Vector3 &color,
+                           Texture *texture, const Vector4 &textureRect, const Vector2 &cameraPos, bool flip,
+                           float textureFactor)
+{
+    float flipFactor = flip ? -1.0f : 1.0f;
+
+    Matrix4 model = Matrix4::CreateScale(Vector3(size.x * flipFactor, size.y, 1.0f)) *
+        Matrix4::CreateRotationZ(rotation) *
+        Matrix4::CreateTranslation(Vector3(position.x, position.y, 0.0f));
+
+    Draw(RendererMode::TRIANGLES, model, cameraPos, mSpriteVerts, color, texture, textureRect, textureFactor);
+}
+
+void Renderer::DrawGeometry(const Vector2 &position, const Vector2 &size, float rotation, const Vector3 &color,
+                            const Vector2 &cameraPos, VertexArray *vertexArray, RendererMode mode)
+{
+    Matrix4 model = Matrix4::CreateScale(Vector3(size.x, size.y, 1.0f)) *
+        Matrix4::CreateRotationZ(rotation) *
+        Matrix4::CreateTranslation(Vector3(position.x, position.y, 0.0f));
+
+    Draw(mode, model, cameraPos, vertexArray, color);
 }
 
 void Renderer::Clear()
 {
     // Clear the color buffer
     glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void Renderer::Present()
+{
+    // Swap the buffers
+    SDL_GL_SwapWindow(mWindow);
+}
+
+Texture* Renderer::GetTexture(const std::string& fileName)
+{
+    Texture* tex = nullptr;
+    auto iter = mTextures.find(fileName);
+    if (iter != mTextures.end())
+    {
+        tex = iter->second;
+    }
+    else
+    {
+        tex = new Texture();
+        if (tex->Load(fileName))
+        {
+            mTextures.emplace(fileName, tex);
+            return tex;
+        }
+        else
+        {
+            delete tex;
+            return nullptr;
+        }
+    }
+    return tex;
+}
+
+void Renderer::UpdateOrthographicMatrix(int width, int height)
+{
+    mOrthoProjection = Matrix4::CreateOrtho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
+    mBaseShader->SetMatrixUniform("uOrthoProj", mOrthoProjection);
+    glViewport(0, 0, width, height);
+}
+
+Vector2 Renderer::GetWindowSize() const
+{
+    int width, height;
+    SDL_GetWindowSize(mWindow, &width, &height);
+    return Vector2{width, height};
 }
 
 void Renderer::Draw(RendererMode mode, const Matrix4 &modelMatrix, const Vector2 &cameraPos, VertexArray *vertices,
@@ -129,54 +214,21 @@ void Renderer::Draw(RendererMode mode, const Matrix4 &modelMatrix, const Vector2
     }
 }
 
-void Renderer::DrawRect(const Vector2 &position, const Vector2 &size, float rotation, const Vector3 &color,
-                        const Vector2 &cameraPos, RendererMode mode)
-{
-    Matrix4 model = Matrix4::CreateScale(Vector3(size.x, size.y, 1.0f)) *
-                    Matrix4::CreateRotationZ(rotation) *
-                    Matrix4::CreateTranslation(Vector3(position.x, position.y, 0.0f));
-
-    Draw(mode, model, cameraPos, mSpriteVerts, color);
-}
-
-void Renderer::DrawTexture(const Vector2 &position, const Vector2 &size, float rotation, const Vector3 &color,
-                           Texture *texture, const Vector4 &textureRect, const Vector2 &cameraPos, bool flip,
-                           float textureFactor)
-{
-    float flipFactor = flip ? -1.0f : 1.0f;
-
-    Matrix4 model = Matrix4::CreateScale(Vector3(size.x * flipFactor, size.y, 1.0f)) *
-                    Matrix4::CreateRotationZ(rotation) *
-                    Matrix4::CreateTranslation(Vector3(position.x, position.y, 0.0f));
-
-    Draw(RendererMode::TRIANGLES, model, cameraPos, mSpriteVerts, color, texture, textureRect, textureFactor);
-}
-
-void Renderer::DrawGeometry(const Vector2 &position, const Vector2 &size, float rotation, const Vector3 &color,
-                            const Vector2 &cameraPos, VertexArray *vertexArray, RendererMode mode)
-{
-    Matrix4 model = Matrix4::CreateScale(Vector3(size.x, size.y, 1.0f)) *
-                    Matrix4::CreateRotationZ(rotation) *
-                    Matrix4::CreateTranslation(Vector3(position.x, position.y, 0.0f));
-
-    Draw(mode, model, cameraPos, vertexArray, color);
-}
-
-void Renderer::Present()
-{
-	// Swap the buffers
-	SDL_GL_SwapWindow(mWindow);
-}
 
 bool Renderer::LoadShaders()
 {
-	// Create sprite shader
-	mBaseShader = new Shader();
-	if (!mBaseShader->Load("../Shaders/Base")) {
-		return false;
-	}
+    // Create sprite shader
+    mBaseShader = new Shader();
+    if (!mBaseShader->Load("../Shaders/Base")) {
+        return false;
+    }
 
-	mBaseShader->SetActive();
+    mChessShader = new Shader();
+    if (!mChessShader->Load("../Shaders/Chess")) {
+        return false;
+    }
+
+    mBaseShader->SetActive();
 
     return true;
 }
@@ -187,38 +239,12 @@ void Renderer::CreateSpriteVerts()
         //   POSITION | TEXTURE
         .5f,  .5f,        1.0f, 0.0f,
         .5f, -.5f,        1.0f, 1.0f,
-       -.5f, -.5f,        0.0f, 1.0f,
-       -.5f,  .5f,        0.0f, 0.0f
+        -.5f, -.5f,        0.0f, 1.0f,
+        -.5f,  .5f,        0.0f, 0.0f
     };
     const unsigned int indices[] = {
         0, 1, 2,
         2, 3, 0
     };
     mSpriteVerts = new VertexArray(vertices, 4, indices, 6);
-}
-
-
-Texture* Renderer::GetTexture(const std::string& fileName)
-{
-    Texture* tex = nullptr;
-    auto iter = mTextures.find(fileName);
-    if (iter != mTextures.end())
-    {
-        tex = iter->second;
-    }
-    else
-    {
-        tex = new Texture();
-        if (tex->Load(fileName))
-        {
-            mTextures.emplace(fileName, tex);
-            return tex;
-        }
-        else
-        {
-            delete tex;
-            return nullptr;
-        }
-    }
-    return tex;
 }

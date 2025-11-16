@@ -6,10 +6,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(PROJECT_NAME "EraDosFidalgos")
 project(${PROJECT_NAME})
 
-find_package(SDL2 REQUIRED)
-find_package(SDL2_image REQUIRED)
-find_package(GLEW REQUIRED)
-find_package(OpenGL REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL3 REQUIRED sdl3)
+pkg_check_modules(SDL3_IMAGE REQUIRED sdl3-image)
+pkg_check_modules(GLEW REQUIRED glew)
+
+include(ImGuiConfig.cmake)
+include(FlecsConfig.cmake)
 
 add_executable(${PROJECT_NAME}
         Source/Renderer/Shader.cpp
@@ -21,29 +24,34 @@ add_executable(${PROJECT_NAME}
         Source/Random.h
         Source/Game.cpp
         Source/Game.h
-        Source/Actors/Actor.cpp
-        Source/Actors/Actor.h
-        Source/Components/Component.cpp
-        Source/Components/Component.h
-        Source/Components/Drawing/DrawComponent.cpp
-        Source/Components/Drawing/DrawComponent.h
-        Source/Components/Physics/AABBColliderComponent.cpp
-        Source/Components/Physics/AABBColliderComponent.h
         Source/Renderer/Renderer.cpp
         Source/Renderer/Renderer.h
         Source/Renderer/VertexArray.h
         Source/Renderer/VertexArray.cpp
         Source/Renderer/Texture.cpp
         Source/Renderer/Texture.h
-        Source/Actors/MapTile.h
-        Source/Components/Drawing/AnimatorComponent.cpp
-        Source/Components/Drawing/AnimatorComponent.h
-        Source/Components/Drawing/RectComponent.cpp
-        Source/Components/Drawing/RectComponent.h
-        Source/Actors/Settlement.h
-        Source/Actors/Character.h
-        Source/Actors/Army.h
-        Source/Actors/Event.h
+        Source/Entities/MapTile.h
+        Source/Components/AnimatorComponent.cpp
+        Source/Components/AnimatorComponent.h
+        Source/Components/RectComponent.cpp
+        Source/Components/RectComponent.h
+        Source/Entities/Settlement.h
+        Source/Entities/Character.h
+        Source/Entities/Army.h
+        Source/Entities/Event.h
+        Source/Components/Camera.cpp
+        Source/Components/Camera.h
+        Source/Systems/ChessBoard.cpp
+        Source/Systems/ChessBoard.h
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE GLEW::GLEW SDL2::SDL2 SDL2_image::SDL2_image)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+        ImGui
+        flecs::flecs
+        ${SDL3_LIBRARIES}
+        ${SDL3_IMAGE_LIBRARIES}
+        ${GLEW_LIBRARIES})
+target_include_directories(${PROJECT_NAME} PRIVATE
+        ${SDL3_INCLUDE_DIRS}
+        ${SDL3_IMAGE_INCLUDE_DIRS}
+        ${GLEW_INCLUDE_DIRS})
