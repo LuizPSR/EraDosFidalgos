@@ -43,7 +43,11 @@ target_compile_options(ImGui PRIVATE -fPIC)
 # ----------------------------------------------------
 
 # Find the dependencies needed for ImGui's backends
+
 find_package(PkgConfig REQUIRED)
+find_package(SDL3 REQUIRED)
+find_package(GLEW REQUIRED)
+
 pkg_check_modules(SDL3 REQUIRED sdl3)
 pkg_check_modules(GLEW REQUIRED glew)
 
@@ -54,7 +58,7 @@ target_include_directories(ImGui PUBLIC
 )
 
 # Link the required libraries to the ImGui target
-target_link_libraries(ImGui PRIVATE ${SDL3_LIBRARIES} ${GLEW_LIBRARIES})
+target_link_libraries(ImGui PRIVATE ${SDL3_LIBRARIES} GLEW::GLEW)
 
 # Set properties on the target, making it easy to use for the main app
 set_target_properties(ImGui PROPERTIES

@@ -8,10 +8,11 @@ project(${PROJECT_NAME})
 
 find_package(PkgConfig REQUIRED)
 find_package(SDL3 REQUIRED)
-find_package(SDL3_IMAGE REQUIRED)
+find_package(SDL3_image REQUIRED)
+find_package(GLEW REQUIRED)
 
 pkg_check_modules(SDL3 REQUIRED sdl3)
-pkg_check_modules(SDL3_IMAGE REQUIRED sdl3-image)
+pkg_check_modules(SDL3_image REQUIRED sdl3-image)
 pkg_check_modules(GLEW REQUIRED glew)
 
 include(ImGuiConfig.cmake)
@@ -51,10 +52,10 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME} PRIVATE
         ImGui
         flecs::flecs
-        ${SDL3_LIBRARIES}
-        ${SDL3_IMAGE_LIBRARIES}
-        ${GLEW_LIBRARIES})
+        SDL3::SDL3
+        SDL3_image::SDL3_image
+        GLEW::GLEW)
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${SDL3_INCLUDE_DIRS}
-        ${SDL3_IMAGE_INCLUDE_DIRS}
+        ${SDL3_image_INCLUDE_DIRS}
         ${GLEW_INCLUDE_DIRS})
