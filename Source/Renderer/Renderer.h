@@ -35,10 +35,7 @@ struct Renderer
     void Clear();
     void Present();
 
-    // Getters
-	// TODO: get rid of this
     class Texture* GetTexture(const std::string& fileName);
-	class Shader* GetBaseShader() const { return mBaseShader; }
 
 	void UpdateOrthographicMatrix(int width, int height);
 
