@@ -21,6 +21,10 @@ Renderer::~Renderer()
 
 bool Renderer::Initialize()
 {
+    // Create an OpenGL context
+    mContext = SDL_GL_CreateContext(mWindow);
+    SDL_GL_MakeCurrent(mWindow, mContext);
+
     // Specify version 3.3 (core profile)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -32,11 +36,11 @@ bool Renderer::Initialize()
     // Force OpenGL to use hardware acceleration
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
-    // Turn on vsync
-    SDL_GL_SetSwapInterval(1);
-
-    // Create an OpenGL context
-    mContext = SDL_GL_CreateContext(mWindow);
+    // Turn off vsync
+    if (SDL_GL_SetSwapInterval(0) == false)
+    {
+        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Warning: Unable to disable VSync: %s", SDL_GetError());
+    }
 
     // Initialize GLEW
     glewExperimental = GL_TRUE;
