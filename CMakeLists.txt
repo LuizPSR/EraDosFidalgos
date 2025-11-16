@@ -9,7 +9,7 @@ project(${PROJECT_NAME})
 find_package(PkgConfig REQUIRED)
 find_package(SDL3 REQUIRED)
 find_package(SDL3_image REQUIRED)
-find_package(GLEW REQUIRED)
+pkg_check_modules(GLEW REQUIRED glew>=2.2)
 
 pkg_check_modules(SDL3 REQUIRED sdl3)
 pkg_check_modules(SDL3_image REQUIRED sdl3-image)

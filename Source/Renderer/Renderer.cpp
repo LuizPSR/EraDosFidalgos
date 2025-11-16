@@ -21,33 +21,59 @@ Renderer::~Renderer()
 
 bool Renderer::Initialize()
 {
+
+
+    // Request OpenGL 4.1 Core Profile (4.1 is the highest supported by Apple on recent macOS)
+    // NOTE: You can also request 3.2 or 3.3.
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+    // CRITICAL FIX FOR MACOS: Force Forward Compatibility for modern contexts
+#ifdef __APPLE__
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+#endif
+
+    // Enable double buffering and set the buffer size (standard)
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+
+    // 2. Create the window and OpenGL context (The window must have the SDL_WINDOW_OPENGL flag)
+    // (Assuming mWindow is created elsewhere with SDL_WINDOW_OPENGL)
+    // mWindow = SDL_CreateWindow(... SDL_WINDOW_OPENGL ...);
+
+    // Create an OpenGL context
+    mContext = SDL_GL_CreateContext(mWindow);
+    if (!mContext) {
+        // Handle error: context creation failed
+        return false;
+    }
+    SDL_GL_MakeCurrent(mWindow, mContext);
+
+    // 3. Initialize GLEW (or GLAD) *after* the context is created
+    GLenum glewError = glewInit();
+    if (glewError != GLEW_OK)
+    {
+        // Handle error: GLEW initialization failed
+        return false;
+    }
+
+    // Check the actual version created
+    int major, minor;
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major);
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor);
+
     // Create an OpenGL context
     mContext = SDL_GL_CreateContext(mWindow);
     SDL_GL_MakeCurrent(mWindow, mContext);
 
-    // Specify version 3.3 (core profile)
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-    // Enable double buffering
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-    // Force OpenGL to use hardware acceleration
-    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-
-    // Turn off vsync
-    if (SDL_GL_SetSwapInterval(0) == false)
-    {
-        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Warning: Unable to disable VSync: %s", SDL_GetError());
-    }
-
-    // Initialize GLEW
-    glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK) {
-        SDL_Log("Failed to initialize GLEW.");
-        return false;
-    }
+    // --- ADD GLSL VERSION CHECK HERE ---
+    const GLubyte* glVersion = glGetString(GL_VERSION);
+    const GLubyte* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
     // Make sure we can create/compile shaders
     if (!LoadShaders()) {
