@@ -3,22 +3,20 @@
 //
 
 #include "AnimatorComponent.h"
-#include "../../Actors/Actor.h"
-#include "../../Game.h"
-#include "../../Json.h"
-#include "../../Renderer/Texture.h"
+#include "../Game.h"
+#include "../Json.h"
+#include "../Renderer/Texture.h"
+#include "../Renderer/Renderer.h"
 #include <fstream>
 
-AnimatorComponent::AnimatorComponent(class Actor* owner, const std::string &texPath, const std::string &dataPath,
+AnimatorComponent::AnimatorComponent(class Renderer* renderer, const std::string &texPath, const std::string &dataPath,
                                      int width, int height, int drawOrder)
-        :DrawComponent(owner,  drawOrder)
-        ,mAnimTimer(0.0f)
+        :mAnimTimer(0.0f)
         ,mIsPaused(false)
         ,mWidth(width)
         ,mHeight(height)
         ,mTextureFactor(1.0f)
 {
-    const auto renderer = owner->GetGame()->GetRenderer();
     mSpriteTexture = renderer->GetTexture(texPath);
     if (!dataPath.empty())
         LoadSpriteSheetData(dataPath);
@@ -64,11 +62,14 @@ bool AnimatorComponent::LoadSpriteSheetData(const std::string& dataPath)
     return true;
 }
 
-void AnimatorComponent::Draw(Renderer* renderer)
+void AnimatorComponent::Draw(class Renderer* renderer, Vector2 position, float rotation, Vector2 cameraPos)
 {
-    if (mIsVisible) {
-        const auto game = mOwner->GetGame();
+    // TODO: restore behavior
+    bool mIsVisible = true;
+    Vector2 scale{1.0f, 1.0f};
+    Vector3 color{255, 0, 0};
 
+    if (mIsVisible) {
         auto rect = Vector4::UnitRect;
         if (!mAnimations.empty()) {
             try {
@@ -79,9 +80,8 @@ void AnimatorComponent::Draw(Renderer* renderer)
         }
 
         renderer->DrawTexture(
-            mOwner->GetPosition(), mOwner->GetScale(), mOwner->GetRotation(),
-            mColor,
-            mSpriteTexture, rect, game->GetCameraPos(),
+            position, scale, rotation, color,
+            mSpriteTexture, rect, cameraPos,
             true, mTextureFactor
             );
     }

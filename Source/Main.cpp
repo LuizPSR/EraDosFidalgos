@@ -6,16 +6,23 @@
 //  Copyright © 2017 Sanjay Madhav. All rights reserved.
 //
 
+#include <SDL3/SDL.h>
+#include <thread>
+
 #include "Game.h"
 
 int main(int argc, char** argv)
 {
-    Game game;
-    bool success = game.Initialize();
-    if (success)
+    flecs::world ecs(argc, argv);
+    if (Initialize(ecs) == false)
     {
-        game.RunLoop();
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to initialize game");
+        return 1;
     }
-    game.Shutdown();
-    return 0;
+    const auto numThreads = std::thread::hardware_concurrency();
+    return ecs.app()
+        .enable_rest()
+        .enable_stats()
+        .threads(static_cast<int>(numThreads))
+        .run();
 }

@@ -4,18 +4,19 @@
 
 #pragma once
 
+#include "../Math.h"
 #include <unordered_map>
-#include "DrawComponent.h"
+#include <string>
+#include <vector>
 
-class AnimatorComponent : public DrawComponent {
-public:
+struct AnimatorComponent {
     // (Lower draw order corresponds with further back)
-    AnimatorComponent(class Actor* owner, const std::string &texturePath, const std::string &dataPath,
+    AnimatorComponent(class Renderer* renderer, const std::string &texturePath, const std::string &dataPath,
             int width, int height, int drawOrder = 100);
-    ~AnimatorComponent() override;
+    ~AnimatorComponent();
 
-    void Draw(Renderer* renderer) override;
-    void Update(float deltaTime) override;
+    void Draw(class Renderer* renderer, Vector2 position, float rotation, Vector2 cameraPos);
+    void Update(float deltaTime);
 
     // Use to change the FPS of the animation
     void SetAnimFPS(float fps) { mAnimFPS = fps; }
@@ -31,7 +32,6 @@ public:
 
     void SetTextFactor(const float factor) { mTextureFactor = factor;}
 
-private:
     bool LoadSpriteSheetData(const std::string& dataPath);
 
     // Sprite sheet texture
@@ -61,4 +61,3 @@ private:
 
     float mTextureFactor;
 };
-

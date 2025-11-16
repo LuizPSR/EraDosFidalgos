@@ -8,7 +8,7 @@ enum SettlementType {
     City,
 };
 
-class Settlement : public Actor {
+class Settlement {
 public:
     explicit Settlement(Game* game, SettlementType settlementType, MapTile* location);
     void OnUpdate(float deltaTime) override;

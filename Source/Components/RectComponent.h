@@ -4,18 +4,17 @@
 
 #pragma once
 
-#include "DrawComponent.h"
-#include "../../Renderer/VertexArray.h"
+#include "../Renderer/VertexArray.h"
+#include "../Math.h"
+#include "../Renderer/Renderer.h"
 
-class RectComponent : public DrawComponent
+struct RectComponent
 {
-public:
     RectComponent(class Actor* owner, int width, int height, RendererMode mode, int drawOrder = 100);
     ~RectComponent();
 
-    void Draw(class Renderer* renderer) override;
+    void Draw(class Renderer* renderer, Vector2 position, float rotation, Vector2 cameraPos);
 
-private:
     int mWidth;
     int mHeight;
     RendererMode mMode;
