@@ -12,6 +12,7 @@ find_package(GLEW REQUIRED CONFIG)
 
 include(ImGuiConfig.cmake)
 include(FlecsConfig.cmake)
+include(TOML.cmake)
 
 add_executable(${PROJECT_NAME}
         Source/Renderer/Shader.cpp
@@ -49,4 +50,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         flecs::flecs
         SDL3::SDL3
         SDL3_image::SDL3_image
-        GLEW::glew)
+        GLEW::glew
+        tomlplusplus::tomlplusplus)
