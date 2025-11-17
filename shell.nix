@@ -1,14 +1,13 @@
 { pkgs ? import <nixpkgs> {} }:
 with pkgs; mkShell {
   packages = [
-    # gdb
-    # stb
+    cacert
+    git
     sdl3
     sdl3-image
     glew
-    # glm
-    # (callPackage ./imgui.nix {})
-    pkg-config
     cmake
+    ninja
+    gcc
   ];
 }

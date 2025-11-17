@@ -6,14 +6,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(PROJECT_NAME "EraDosFidalgos")
 project(${PROJECT_NAME})
 
-find_package(PkgConfig REQUIRED)
 find_package(SDL3 REQUIRED)
 find_package(SDL3_image REQUIRED)
-pkg_check_modules(GLEW REQUIRED glew>=2.2)
-
-pkg_check_modules(SDL3 REQUIRED sdl3)
-pkg_check_modules(SDL3_image REQUIRED sdl3-image)
-pkg_check_modules(GLEW REQUIRED glew)
+find_package(GLEW REQUIRED CONFIG)
 
 include(ImGuiConfig.cmake)
 include(FlecsConfig.cmake)
@@ -54,8 +49,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         flecs::flecs
         SDL3::SDL3
         SDL3_image::SDL3_image
-        GLEW::GLEW)
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${SDL3_INCLUDE_DIRS}
-        ${SDL3_image_INCLUDE_DIRS}
-        ${GLEW_INCLUDE_DIRS})
+        GLEW::glew)
