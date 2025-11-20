@@ -21,10 +21,6 @@ Renderer::~Renderer()
 
 bool Renderer::Initialize()
 {
-
-
-    // Request OpenGL 4.1 Core Profile (4.1 is the highest supported by Apple on recent macOS)
-    // NOTE: You can also request 3.2 or 3.3.
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -42,10 +38,6 @@ bool Renderer::Initialize()
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    // 2. Create the window and OpenGL context (The window must have the SDL_WINDOW_OPENGL flag)
-    // (Assuming mWindow is created elsewhere with SDL_WINDOW_OPENGL)
-    // mWindow = SDL_CreateWindow(... SDL_WINDOW_OPENGL ...);
-
     // Create an OpenGL context
     mContext = SDL_GL_CreateContext(mWindow);
     if (!mContext) {
@@ -54,26 +46,12 @@ bool Renderer::Initialize()
     }
     SDL_GL_MakeCurrent(mWindow, mContext);
 
-    // 3. Initialize GLEW (or GLAD) *after* the context is created
     GLenum glewError = glewInit();
     if (glewError != GLEW_OK)
     {
         // Handle error: GLEW initialization failed
         return false;
     }
-
-    // Check the actual version created
-    int major, minor;
-    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major);
-    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor);
-
-    // Create an OpenGL context
-    mContext = SDL_GL_CreateContext(mWindow);
-    SDL_GL_MakeCurrent(mWindow, mContext);
-
-    // --- ADD GLSL VERSION CHECK HERE ---
-    const GLubyte* glVersion = glGetString(GL_VERSION);
-    const GLubyte* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
     // Make sure we can create/compile shaders
     if (!LoadShaders()) {
