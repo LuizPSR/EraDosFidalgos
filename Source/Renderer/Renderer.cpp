@@ -16,6 +16,8 @@ Renderer::Renderer(SDL_Window *window)
 
 Renderer::~Renderer()
 {
+    Shutdown();
+
     delete mSpriteVerts;
     mSpriteVerts = nullptr;
 }
@@ -91,12 +93,22 @@ void Renderer::Shutdown()
 
     mBaseShader->Unload();
     delete mBaseShader;
+    mBaseShader = nullptr;
 
     mChessShader->Unload();
     delete mChessShader;
+    mChessShader = nullptr;
 
-    SDL_GL_DestroyContext(mContext);
-    SDL_DestroyWindow(mWindow);
+    if (mContext)
+    {
+        SDL_GL_DestroyContext(mContext);
+        mContext = nullptr;
+    }
+    if (mWindow)
+    {
+        SDL_DestroyWindow(mWindow);
+        mWindow = nullptr;
+    }
 }
 
 void Renderer::DrawRect(const glm::vec2 &position, const glm::vec2 &size, float rotation, const glm::vec3 &color,

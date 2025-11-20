@@ -45,8 +45,7 @@ glm::mat4 Camera::CalculateProjection(const Renderer& renderer) const
 glm::vec3 Camera::NDCToWorld(const glm::vec2& NDC, const struct Renderer& renderer) const
 {
     const glm::mat4 VPI = glm::inverse(CalculateProjection(renderer) * mView);
-    const glm::vec4 result = VPI * glm::vec4(NDC, 0.0f, 0.0f);
-    return glm::vec3{result.x, result.y, result.z};
+    return VPI * glm::vec4(NDC, 0.0f, 1.0f);
 }
 
 void UpdateCamera(Camera &camera, const InputState &input, float deltaTime)

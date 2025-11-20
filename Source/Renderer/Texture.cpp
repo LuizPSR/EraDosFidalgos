@@ -21,6 +21,18 @@ bool Texture::Load(const std::string &filePath)
         return false;
     }
 
+    if (surf->format != SDL_PIXELFORMAT_RGBA32)
+    {
+        SDL_Surface *converted = SDL_ConvertSurface(surf, SDL_PIXELFORMAT_RGBA32);
+        if (!converted)
+        {
+            SDL_Log("Failed to convert texture file %s", filePath.c_str());
+            return false;
+        }
+        SDL_DestroySurface(surf);
+        surf = converted;
+    }
+
     // Load to GPU
     GLuint textureID;
     glGenTextures(1, &textureID); // Cria textura na GPU
