@@ -9,7 +9,7 @@ struct Camera
     const float mMinZoom = 1.0f;
     const float mMaxZoom = 50.0f;
     const float mZoomSpeed = 16.0f;
-    const float mMoveSpeed = 1024.0f;
+    const float mMoveSpeed = 2848.0f;
 
     Matrix4 mView;
 
@@ -25,6 +25,7 @@ struct Camera
     float mPitch = -M_PI / 4.0f;
 
     void RecalculateView();
+    float GetProjectionScale() const;
     Matrix4 CalculateProjection(const struct Renderer &renderer) const;
 };
 

@@ -26,26 +26,41 @@ void Camera::RecalculateView()
     mView = Matrix4::CreateLookAt(mPosition, mTarget, mUp);
 }
 
+float Camera::GetProjectionScale() const
+{
+    return mZoomLevel * 0.02f;
+}
+
 Matrix4 Camera::CalculateProjection(const Renderer& renderer) const
 {
     const auto &sz = renderer.GetWindowSize();
     float halfW = sz.x * 0.5f;
     float halfH = sz.y * 0.5f;
     // Apply zoom to the orthographic size
-    float left   = -halfW * mZoomLevel * 0.02f;
-    float right  =  halfW * mZoomLevel * 0.02f;
-    float bottom = -halfH * mZoomLevel * 0.02f;
-    float top    =  halfH * mZoomLevel * 0.02f;
+    const float scale = GetProjectionScale();
+    float left   = -halfW * scale;
+    float right  =  halfW * scale;
+    float bottom = -halfH * scale;
+    float top    =  halfH * scale;
     return Matrix4::CreateOrtho(left, right, bottom, top, 0.1f, 100.0f);
 }
 
 void UpdateCamera(Camera &camera, const InputState &input, float deltaTime)
 {
+    const bool* state = SDL_GetKeyboardState(nullptr);
+
     // Change Positions
     Vector2 &velocity = camera.mVelocity;
+    const float scale = camera.GetProjectionScale() * deltaTime;
     if (velocity.LengthSq() > 0.0f)
     {
-        camera.mTarget += Vector3{velocity.x, velocity.y, 0.0f} * deltaTime;
+        if (state[SDL_SCANCODE_LSHIFT] || state[SDL_SCANCODE_RSHIFT])
+        {
+            camera.mTarget += Vector3{velocity.x, velocity.y, 0.0f} * scale  * 2.0f;
+        } else
+        {
+            camera.mTarget += Vector3{velocity.x, velocity.y, 0.0f} * scale;
+        }
     }
     if (fabsf(camera.mZoomInertia) > 0.0f)
     {
@@ -54,7 +69,7 @@ void UpdateCamera(Camera &camera, const InputState &input, float deltaTime)
     }
 
     // Reduce Velocities
-    float exponential = powf(0.05f, deltaTime);
+    float exponential = powf(0.001f, deltaTime);
     camera.mVelocity *= exponential;
     camera.mZoomInertia *= exponential;
     if (camera.mVelocity.LengthSq() < 0.01f)
@@ -73,8 +88,6 @@ void UpdateCamera(Camera &camera, const InputState &input, float deltaTime)
     }
 
     const float accelSpeed = camera.mMoveSpeed * deltaTime;
-    const bool* state = SDL_GetKeyboardState(nullptr);
-
     if (state[SDL_SCANCODE_W]) {
         velocity.y += accelSpeed;
     }
@@ -91,8 +104,8 @@ void UpdateCamera(Camera &camera, const InputState &input, float deltaTime)
     // Mouse inputs don't take deltaTime because they're in deltas already
     if (input.IsRightMouseButtonDown || input.IsMiddleMouseButtonDown)
     {
-        velocity.x += input.MouseDeltaX * camera.mMoveSpeed * 0.01f;
-        velocity.y += input.MouseDeltaY * camera.mMoveSpeed * 0.01f;
+        velocity.x = input.MouseDeltaX * camera.mMoveSpeed * 0.05f;
+        velocity.y = input.MouseDeltaY * camera.mMoveSpeed * 0.05f;
     }
     if (input.MouseScrollAmount != 0.0f)
     {
