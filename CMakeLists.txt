@@ -14,6 +14,10 @@ include(ImGuiConfig.cmake)
 include(FlecsConfig.cmake)
 include(TOML.cmake)
 
+set(ASSETS_DIR "${PROJECT_SOURCE_DIR}/Assets")
+set(ASSET_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${ASSETS_DIR}" DESTINATION "${ASSET_DESTINATION_DIR}")
+
 add_executable(${PROJECT_NAME}
         Source/Renderer/Shader.cpp
         Source/Renderer/Shader.h
