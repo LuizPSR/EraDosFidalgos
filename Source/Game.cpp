@@ -102,13 +102,6 @@ void RegisterSystems(const flecs::world &ecs)
                 ChessBoardNS::Destroy(ecs);
             }
 
-            it.world().each([](Camera &camera)
-            {
-                ImGui::Text("Camera Position: (%.1f, %.1f, %.1f)", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
-                ImGui::Text("Target Position: (%.1f, %.1f, %.1f)", camera.mTarget.x, camera.mTarget.y, camera.mTarget.z);
-                ImGui::SliderFloat("Zoom", &camera.mZoomLevel, camera.mMinZoom, camera.mMaxZoom);
-            });
-
             ImGui::End();
         });
     ecs.system<Renderer>("StartRender")

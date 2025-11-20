@@ -1,7 +1,7 @@
 #pragma once
 #include <GL/glew.h>
 #include <string>
-#include "../Math.h"
+#include <glm/glm.hpp>
 
 class Shader
 {
@@ -18,10 +18,10 @@ public:
 	void SetActive() const;
 
     // Sets a Vector / Matrix uniform
-    void SetVectorUniform (const char* name, const Vector2& vector) const;
-	void SetVectorUniform (const char* name, const Vector3& vector) const;
-    void SetVectorUniform (const char* name, const Vector4& vector) const;
-	void SetMatrixUniform(const char* name, const Matrix4& matrix) const;
+    void SetVectorUniform (const char* name, const glm::vec2& vector) const;
+	void SetVectorUniform (const char* name, const glm::vec3& vector) const;
+    void SetVectorUniform (const char* name, const glm::vec4& vector) const;
+	void SetMatrixUniform(const char* name, const glm::mat4& matrix) const;
     void SetFloatUniform(const char* name, float value) const;
     void SetIntegerUniform(const char *name, int value) const;
 

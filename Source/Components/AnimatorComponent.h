@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Math.h"
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <glm/glm.hpp>
 
 struct AnimatorComponent {
     // (Lower draw order corresponds with further back)
@@ -15,7 +15,7 @@ struct AnimatorComponent {
             int width, int height, int drawOrder = 100);
     ~AnimatorComponent();
 
-    void Draw(class Renderer* renderer, Vector2 position, float rotation, Vector2 cameraPos);
+    void Draw(class Renderer* renderer, glm::vec2 position, float rotation, glm::vec2 cameraPos);
     void Update(float deltaTime);
 
     // Use to change the FPS of the animation
@@ -38,7 +38,7 @@ struct AnimatorComponent {
     class Texture* mSpriteTexture;
 
     // Vector of sprites
-    std::vector<Vector4> mSpriteSheetData;
+    std::vector<glm::vec4> mSpriteSheetData;
 
     // Map of animation name to vector of textures corresponding to the animation
     std::unordered_map<std::string, std::vector<int>> mAnimations;

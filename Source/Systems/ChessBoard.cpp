@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 #include "SDL3/SDL.h"
+#include "../Renderer/Renderer.h"
 #include "../Renderer/Shader.h"
 #include "../Game.h"
 
@@ -35,6 +36,8 @@ void ChessBoard::Draw(Renderer& renderer, const Camera& camera)
     chessShader->SetMatrixUniform("uView", camera.mView);
     chessShader->SetMatrixUniform("uProj", camera.CalculateProjection(renderer));
     chessShader->SetMatrixUniform("uModel", mModel);
+    chessShader->SetVectorUniform("uMousePos", renderer.GetMousePosNDC());
+
     // 3. Draw the plane
     verts->SetActive();
 
@@ -59,11 +62,21 @@ void ChessBoardNS::RegisterSystems(const flecs::world& ecs)
         .each(RenderScene)
         .disable());
 
-    void(ecs.system("SceneUI")
+    void(ecs.system<Camera, const Renderer>("SceneUI")
         .kind(flecs::OnUpdate)
-        .run([](const flecs::iter &it)
+        .each([](Camera &camera, const Renderer &renderer)
         {
             ImGui::Begin("Scene Loaded");
+
+            ImGui::Text("Camera Position: (%.1f, %.1f, %.1f)", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+            ImGui::Text("Target Position: (%.1f, %.1f, %.1f)", camera.mTarget.x, camera.mTarget.y, camera.mTarget.z);
+            ImGui::SliderFloat("Zoom", &camera.mZoomLevel, camera.mMinZoom, camera.mMaxZoom);
+
+            glm::vec2 mousePos = renderer.GetMousePosNDC();
+            ImGui::Text("Mouse Position (NDC): (%.1f, %.1f)", mousePos.x, mousePos.y);
+
+            glm::vec3 mouseWorldPos = camera.NDCToWorld(mousePos, renderer);
+            ImGui::Text("Mouse Position (World): (%.1f, %.1f, %.1f)", mouseWorldPos.x, mouseWorldPos.y, mouseWorldPos.z);
             ImGui::End();
         })
         .disable());

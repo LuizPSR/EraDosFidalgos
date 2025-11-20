@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include <glm/glm.hpp>
 #include "../Renderer/VertexArray.h"
-#include "../Math.h"
 #include "../Renderer/Renderer.h"
 
 struct RectComponent
@@ -13,7 +13,7 @@ struct RectComponent
     RectComponent(class Actor* owner, int width, int height, RendererMode mode, int drawOrder = 100);
     ~RectComponent();
 
-    void Draw(class Renderer* renderer, Vector2 position, float rotation, Vector2 cameraPos);
+    void Draw(Renderer* renderer, glm::vec2 position, float rotation, glm::vec2 cameraPos);
 
     int mWidth;
     int mHeight;

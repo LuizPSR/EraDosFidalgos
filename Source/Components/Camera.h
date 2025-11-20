@@ -1,5 +1,5 @@
 #pragma once
-#include "../Math.h"
+#include <glm/glm.hpp>
 #include "flecs.h"
 
 struct Camera
@@ -11,12 +11,12 @@ struct Camera
     const float mZoomSpeed = 16.0f;
     const float mMoveSpeed = 2848.0f;
 
-    Matrix4 mView;
+    glm::mat4 mView;
 
-    Vector2 mVelocity;
-    Vector3 mPosition;
-    Vector3 mTarget;
-    const Vector3 mUp{0.0f, 1.0f, 0.0f};
+    glm::vec2 mVelocity;
+    glm::vec3 mPosition;
+    glm::vec3 mTarget;
+    const glm::vec3 mUp{0.0f, 1.0f, 0.0f};
 
     float mZoomLevel = 10.0f;
     float mZoomInertia = 0.0f;
@@ -26,7 +26,9 @@ struct Camera
 
     void RecalculateView();
     float GetProjectionScale() const;
-    Matrix4 CalculateProjection(const struct Renderer &renderer) const;
+    glm::mat4 CalculateProjection(const struct Renderer &renderer) const;
+
+    glm::vec3 NDCToWorld(const glm::vec2 &NDC, const struct Renderer &renderer) const;
 };
 
 void UpdateCamera(flecs::iter& it);

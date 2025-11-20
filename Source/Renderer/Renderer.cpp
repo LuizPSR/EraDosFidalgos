@@ -3,13 +3,14 @@
 #include "Shader.h"
 #include "VertexArray.h"
 #include "Texture.h"
+#include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_transform.hpp"
 
 Renderer::Renderer(SDL_Window *window)
     : mContext(nullptr)
       , mBaseShader(nullptr)
       , mSpriteVerts(nullptr)
       , mWindow(window)
-      , mOrthoProjection(Matrix4::Identity)
 {
 }
 
@@ -69,10 +70,6 @@ bool Renderer::Initialize()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Create orthographic projection matrix
-    const auto &sz = GetWindowSize();
-    UpdateOrthographicMatrix(sz.x, sz.y);
-
     // Create the texture uniform
     mBaseShader->SetIntegerUniform("uTexture", 0);
 
@@ -102,36 +99,36 @@ void Renderer::Shutdown()
     SDL_DestroyWindow(mWindow);
 }
 
-void Renderer::DrawRect(const Vector2 &position, const Vector2 &size, float rotation, const Vector3 &color,
-                        const Vector2 &cameraPos, RendererMode mode)
+void Renderer::DrawRect(const glm::vec2 &position, const glm::vec2 &size, float rotation, const glm::vec3 &color,
+                        const glm::vec2 &cameraPos, RendererMode mode)
 {
-    Matrix4 model = Matrix4::CreateScale(Vector3(size.x, size.y, 1.0f)) *
-        Matrix4::CreateRotationZ(rotation) *
-        Matrix4::CreateTranslation(Vector3(position.x, position.y, 0.0f));
-
+    auto model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(position.x, position.y, 0.0f));
+    model = glm::rotate(model, rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::scale(model, glm::vec3(size.x, size.y, 1.0f));
     Draw(mode, model, cameraPos, mSpriteVerts, color);
 }
 
-void Renderer::DrawTexture(const Vector2 &position, const Vector2 &size, float rotation, const Vector3 &color,
-                           Texture *texture, const Vector4 &textureRect, const Vector2 &cameraPos, bool flip,
+void Renderer::DrawTexture(const glm::vec2 &position, const glm::vec2 &size, float rotation, const glm::vec3 &color,
+                           Texture *texture, const glm::vec4 &textureRect, const glm::vec2 &cameraPos, bool flip,
                            float textureFactor)
 {
     float flipFactor = flip ? -1.0f : 1.0f;
 
-    Matrix4 model = Matrix4::CreateScale(Vector3(size.x * flipFactor, size.y, 1.0f)) *
-        Matrix4::CreateRotationZ(rotation) *
-        Matrix4::CreateTranslation(Vector3(position.x, position.y, 0.0f));
-
+    auto model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(position.x, position.y, 0.0f));
+    model = glm::rotate(model, rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::scale(model, glm::vec3(size.x * flipFactor, size.y, 1.0f));
     Draw(RendererMode::TRIANGLES, model, cameraPos, mSpriteVerts, color, texture, textureRect, textureFactor);
 }
 
-void Renderer::DrawGeometry(const Vector2 &position, const Vector2 &size, float rotation, const Vector3 &color,
-                            const Vector2 &cameraPos, VertexArray *vertexArray, RendererMode mode)
+void Renderer::DrawGeometry(const glm::vec2 &position, const glm::vec2 &size, float rotation, const glm::vec3 &color,
+                            const glm::vec2 &cameraPos, VertexArray *vertexArray, RendererMode mode)
 {
-    Matrix4 model = Matrix4::CreateScale(Vector3(size.x, size.y, 1.0f)) *
-        Matrix4::CreateRotationZ(rotation) *
-        Matrix4::CreateTranslation(Vector3(position.x, position.y, 0.0f));
-
+    auto model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(position.x, position.y, 0.0f));
+    model = glm::rotate(model, rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::scale(model, glm::vec3(size.x, size.y, 1.0f));
     Draw(mode, model, cameraPos, vertexArray, color);
 }
 
@@ -174,20 +171,31 @@ Texture* Renderer::GetTexture(const std::string& fileName)
 
 void Renderer::UpdateOrthographicMatrix(int width, int height)
 {
-    mOrthoProjection = Matrix4::CreateOrtho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
+    const float x = static_cast<float>(width), y = static_cast<float>(height);
+    mOrthoProjection = glm::ortho(x * -.5f, x * .5f, y * -.5f, y * .5f, -1.0f, 1.0f);
     mBaseShader->SetMatrixUniform("uOrthoProj", mOrthoProjection);
     glViewport(0, 0, width, height);
 }
 
-Vector2 Renderer::GetWindowSize() const
+glm::vec2 Renderer::GetWindowSize() const
 {
     int width, height;
     SDL_GetWindowSize(mWindow, &width, &height);
-    return Vector2{width, height};
+    return glm::vec2{width, height};
 }
 
-void Renderer::Draw(RendererMode mode, const Matrix4 &modelMatrix, const Vector2 &cameraPos, VertexArray *vertices,
-                    const Vector3 &color, Texture *texture, const Vector4 &textureRect, float textureFactor)
+glm::vec2 Renderer::GetMousePosNDC() const
+{
+    const glm::vec2 sz = GetWindowSize();
+    glm::vec2 mousePos;
+    SDL_GetMouseState(&mousePos.x, &mousePos.y);
+    mousePos.x = 2.0f * mousePos.x / sz.x - 1.0f;
+    mousePos.y = 1.0f - 2.0f * mousePos.y / sz.y;
+    return mousePos;
+}
+
+void Renderer::Draw(RendererMode mode, const glm::mat4 &modelMatrix, const glm::vec2 &cameraPos, VertexArray *vertices,
+                    const glm::vec3 &color, Texture *texture, const glm::vec4 &textureRect, float textureFactor)
 {
     mBaseShader->SetMatrixUniform("uWorldTransform", modelMatrix);
     mBaseShader->SetVectorUniform("uColor", color);

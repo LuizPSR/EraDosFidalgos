@@ -2,7 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <SDL3/SDL.h>
-#include "../Math.h"
+#include <glm/glm.hpp>
 #include "VertexArray.h"
 #include "Texture.h"
 
@@ -20,17 +20,17 @@ struct Renderer
 	bool Initialize();
 	void Shutdown();
 
-    void DrawRect(const Vector2 &position, const Vector2 &size,  float rotation,
-                  const Vector3 &color, const Vector2 &cameraPos, RendererMode mode);
+    void DrawRect(const glm::vec2 &position, const glm::vec2 &size,  float rotation,
+                  const glm::vec3 &color, const glm::vec2 &cameraPos, RendererMode mode);
 
-    void DrawTexture(const Vector2 &position, const Vector2 &size,  float rotation,
-                     const Vector3 &color, Texture *texture,
-                     const Vector4 &textureRect = Vector4::UnitRect,
-                     const Vector2 &cameraPos = Vector2::Zero, bool flip = false,
+    void DrawTexture(const glm::vec2 &position, const glm::vec2 &size,  float rotation,
+                     const glm::vec3 &color, Texture *texture,
+                     const glm::vec4 &textureRect = glm::vec4(0, 0, 1, 1),
+                     const glm::vec2 &cameraPos = glm::vec2(0.0f), bool flip = false,
                      float textureFactor = 1.0f);
 
-    void DrawGeometry(const Vector2 &position, const Vector2 &size,  float rotation,
-                      const Vector3 &color, const Vector2 &cameraPos, VertexArray *vertexArray, RendererMode mode);
+    void DrawGeometry(const glm::vec2 &position, const glm::vec2 &size,  float rotation,
+                      const glm::vec3 &color, const glm::vec2 &cameraPos, VertexArray *vertexArray, RendererMode mode);
 
     void Clear();
     void Present();
@@ -39,13 +39,14 @@ struct Renderer
 
 	void UpdateOrthographicMatrix(int width, int height);
 
-	Vector2 GetWindowSize() const;
+	glm::vec2 GetWindowSize() const;
+	glm::vec2 GetMousePosNDC() const;
 
 	// OpenGL context
 	SDL_GLContext mContext;
 
-    void Draw(RendererMode mode, const Matrix4 &modelMatrix, const Vector2 &cameraPos, VertexArray *vertices,
-              const Vector3 &color,  Texture *texture = nullptr, const Vector4 &textureRect = Vector4::UnitRect, float textureFactor = 1.0f);
+    void Draw(RendererMode mode, const glm::mat4 &modelMatrix, const glm::vec2 &cameraPos, VertexArray *vertices,
+              const glm::vec3 &color,  Texture *texture = nullptr, const glm::vec4 &textureRect = glm::vec4(0, 0, 1, 1), float textureFactor = 1.0f);
 
 	bool LoadShaders();
     void CreateSpriteVerts();
@@ -63,7 +64,7 @@ struct Renderer
 	SDL_Window* mWindow;
 
 	// Ortho projection for 2D shaders
-	Matrix4 mOrthoProjection;
+	glm::mat4 mOrthoProjection;
 
     // Map of textures loaded
     std::unordered_map<std::string, class Texture*> mTextures;

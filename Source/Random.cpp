@@ -36,15 +36,15 @@ int Random::GetIntRange(int min, int max)
 	return dist(sGenerator);
 }
 
-Vector2 Random::GetVector(const Vector2& min, const Vector2& max)
+glm::vec2 Random::GetVector(const glm::vec2& min, const glm::vec2& max)
 {
-	Vector2 r = Vector2(GetFloat(), GetFloat());
+	glm::vec2 r = glm::vec2(GetFloat(), GetFloat());
 	return min + (max - min) * r;
 }
 
-Vector3 Random::GetVector(const Vector3& min, const Vector3& max)
+glm::vec3 Random::GetVector(const glm::vec3& min, const glm::vec3& max)
 {
-	Vector3 r = Vector3(GetFloat(), GetFloat(), GetFloat());
+	glm::vec3 r = glm::vec3(GetFloat(), GetFloat(), GetFloat());
 	return min + (max - min) * r;
 }
 

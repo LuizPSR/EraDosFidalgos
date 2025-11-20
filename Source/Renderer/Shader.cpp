@@ -3,6 +3,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "glm/gtc/type_ptr.inl"
+
 Shader::Shader()
 : mVertexShader(0)
 , mFragShader(0)
@@ -52,34 +54,34 @@ void Shader::SetActive() const
 	glUseProgram(mShaderProgram);
 }
 
-void Shader::SetVectorUniform(const char* name, const Vector2& vector) const
+void Shader::SetVectorUniform(const char* name, const glm::vec2& vector) const
 {
     // Find the uniform by this name
     GLint loc = glGetUniformLocation(mShaderProgram, name);
 
     // Send the vector data to the uniform
-    glUniform2fv(loc, 1, vector.GetAsFloatPtr());
+    glUniform2fv(loc, 1, glm::value_ptr(vector));
 }
 
-void Shader::SetVectorUniform(const char* name, const Vector3& vector) const
+void Shader::SetVectorUniform(const char* name, const glm::vec3& vector) const
 {
 	// Find the uniform by this name
 	GLint loc = glGetUniformLocation(mShaderProgram, name);
 
 	// Send the vector data to the uniform
-	glUniform3fv(loc, 1, vector.GetAsFloatPtr());
+	glUniform3fv(loc, 1, glm::value_ptr(vector));
 }
 
-void Shader::SetVectorUniform(const char* name, const Vector4& vector) const
+void Shader::SetVectorUniform(const char* name, const glm::vec4& vector) const
 {
     // Find the uniform by this name
     GLint loc = glGetUniformLocation(mShaderProgram, name);
 
     // Send the vector data to the uniform
-    glUniform4fv(loc, 1, vector.GetAsFloatPtr());
+    glUniform4fv(loc, 1, glm::value_ptr(vector));
 }
 
-void Shader::SetMatrixUniform(const char* name, const Matrix4& matrix) const
+void Shader::SetMatrixUniform(const char* name, const glm::mat4& matrix) const
 {
 	// Find the uniform by this name
 	const GLint loc = glGetUniformLocation(mShaderProgram, name);
@@ -88,7 +90,7 @@ void Shader::SetMatrixUniform(const char* name, const Matrix4& matrix) const
 		return;
 
 	// Send the matrix data to the uniform
-	glUniformMatrix4fv(loc, 1, GL_FALSE, matrix.GetAsFloatPtr());
+	glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
 void Shader::SetFloatUniform(const char *name, float value) const

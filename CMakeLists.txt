@@ -10,9 +10,10 @@ find_package(SDL3 REQUIRED)
 find_package(SDL3_image REQUIRED)
 find_package(GLEW REQUIRED CONFIG)
 
-include(ImGuiConfig.cmake)
 include(FlecsConfig.cmake)
-include(TOML.cmake)
+include(GLMConfig.cmake)
+include(ImGuiConfig.cmake)
+include(TOMLConfig.cmake)
 
 set(ASSETS_DIR "${PROJECT_SOURCE_DIR}/Assets")
 set(ASSET_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}")
@@ -22,8 +23,6 @@ add_executable(${PROJECT_NAME}
         Source/Renderer/Shader.cpp
         Source/Renderer/Shader.h
         Source/Main.cpp
-        Source/Math.cpp
-        Source/Math.h
         Source/Random.cpp
         Source/Random.h
         Source/Game.cpp
@@ -55,4 +54,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         SDL3::SDL3
         SDL3_image::SDL3_image
         GLEW::glew
-        tomlplusplus::tomlplusplus)
+        tomlplusplus::tomlplusplus
+        glm::glm
+        m) # Math

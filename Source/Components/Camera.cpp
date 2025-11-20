@@ -3,9 +3,11 @@
 #include <algorithm>
 #include <SDL3/SDL.h>
 #include "imgui.h"
-#include "../Math.h"
 #include "../Game.h"
 #include "../Renderer/Renderer.h"
+#include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/gtx/norm.inl"
 
 Camera::Camera()
     : mPosition{50.0f, 50.0f, 0.0f},
@@ -23,7 +25,7 @@ void Camera::RecalculateView()
 
     mTarget.z = 0.0f;
 
-    mView = Matrix4::CreateLookAt(mPosition, mTarget, mUp);
+    mView = glm::lookAt(mPosition, mTarget, mUp);
 }
 
 float Camera::GetProjectionScale() const
@@ -31,18 +33,20 @@ float Camera::GetProjectionScale() const
     return mZoomLevel * 0.02f;
 }
 
-Matrix4 Camera::CalculateProjection(const Renderer& renderer) const
+glm::mat4 Camera::CalculateProjection(const Renderer& renderer) const
 {
-    const auto &sz = renderer.GetWindowSize();
-    float halfW = sz.x * 0.5f;
-    float halfH = sz.y * 0.5f;
     // Apply zoom to the orthographic size
-    const float scale = GetProjectionScale();
-    float left   = -halfW * scale;
-    float right  =  halfW * scale;
-    float bottom = -halfH * scale;
-    float top    =  halfH * scale;
-    return Matrix4::CreateOrtho(left, right, bottom, top, 0.1f, 100.0f);
+    const auto &sz = renderer.GetWindowSize() * GetProjectionScale();
+    // const float fov = 2.0f * atan2(sz.y * 0.5f, 1.0f / scale);
+    // return glm::perspectiveFov(fov, sz.x, sz.y, 0.1f, 100.0f);
+    return glm::ortho(sz.x * -0.5f, sz.x * 0.5f, sz.y * -0.5f, sz.y * 0.5f, 0.1f, 100.0f);
+}
+
+glm::vec3 Camera::NDCToWorld(const glm::vec2& NDC, const struct Renderer& renderer) const
+{
+    const glm::mat4 VPI = glm::inverse(CalculateProjection(renderer) * mView);
+    const glm::vec4 result = VPI * glm::vec4(NDC, 0.0f, 0.0f);
+    return glm::vec3{result.x, result.y, result.z};
 }
 
 void UpdateCamera(Camera &camera, const InputState &input, float deltaTime)
@@ -50,16 +54,16 @@ void UpdateCamera(Camera &camera, const InputState &input, float deltaTime)
     const bool* state = SDL_GetKeyboardState(nullptr);
 
     // Change Positions
-    Vector2 &velocity = camera.mVelocity;
+    glm::vec2 &velocity = camera.mVelocity;
     const float scale = camera.GetProjectionScale() * deltaTime;
-    if (velocity.LengthSq() > 0.0f)
+    if (glm::length2(velocity) > 0.0f)
     {
         if (state[SDL_SCANCODE_LSHIFT] || state[SDL_SCANCODE_RSHIFT])
         {
-            camera.mTarget += Vector3{velocity.x, velocity.y, 0.0f} * scale  * 2.0f;
+            camera.mTarget += glm::vec3{velocity.x, velocity.y, 0.0f} * scale  * 2.0f;
         } else
         {
-            camera.mTarget += Vector3{velocity.x, velocity.y, 0.0f} * scale;
+            camera.mTarget += glm::vec3{velocity.x, velocity.y, 0.0f} * scale;
         }
     }
     if (fabsf(camera.mZoomInertia) > 0.0f)
@@ -72,8 +76,8 @@ void UpdateCamera(Camera &camera, const InputState &input, float deltaTime)
     float exponential = powf(0.001f, deltaTime);
     camera.mVelocity *= exponential;
     camera.mZoomInertia *= exponential;
-    if (camera.mVelocity.LengthSq() < 0.01f)
-        camera.mVelocity = Vector2::Zero;
+    if (glm::length2(camera.mVelocity) < 0.01f)
+        camera.mVelocity = glm::vec2(0.0f);
     if (fabsf(camera.mZoomInertia) < 0.01f)
         camera.mZoomInertia = 0.0f;
 
@@ -95,16 +99,16 @@ void UpdateCamera(Camera &camera, const InputState &input, float deltaTime)
         velocity.y -= accelSpeed;
     }
     if (state[SDL_SCANCODE_A]) {
-        velocity.x += accelSpeed;
+        velocity.x -= accelSpeed;
     }
     if (state[SDL_SCANCODE_D]) {
-        velocity.x -= accelSpeed;
+        velocity.x += accelSpeed;
     }
 
     // Mouse inputs don't take deltaTime because they're in deltas already
     if (input.IsRightMouseButtonDown || input.IsMiddleMouseButtonDown)
     {
-        velocity.x = input.MouseDeltaX * camera.mMoveSpeed * 0.05f;
+        velocity.x = input.MouseDeltaX * camera.mMoveSpeed * -0.05f;
         velocity.y = input.MouseDeltaY * camera.mMoveSpeed * 0.05f;
     }
     if (input.MouseScrollAmount != 0.0f)

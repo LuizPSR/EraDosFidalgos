@@ -8,7 +8,8 @@
 
 #pragma  once
 #include <random>
-#include "Math.h"
+#include <cmath>
+#include <glm/glm.hpp>
 
 class Random
 {
@@ -29,8 +30,8 @@ public:
 	static int GetIntRange(int min, int max);
 
 	// Get a random vector given the min/max bounds
-	static Vector2 GetVector(const Vector2& min, const Vector2& max);
-	static Vector3 GetVector(const Vector3& min, const Vector3& max);
+	static glm::vec2 GetVector(const glm::vec2& min, const glm::vec2& max);
+	static glm::vec3 GetVector(const glm::vec3& min, const glm::vec3& max);
 private:
 	static std::mt19937 sGenerator;
 };

@@ -62,15 +62,15 @@ bool AnimatorComponent::LoadSpriteSheetData(const std::string& dataPath)
     return true;
 }
 
-void AnimatorComponent::Draw(class Renderer* renderer, Vector2 position, float rotation, Vector2 cameraPos)
+void AnimatorComponent::Draw(class Renderer* renderer, glm::vec2 position, float rotation, glm::vec2 cameraPos)
 {
     // TODO: restore behavior
     bool mIsVisible = true;
-    Vector2 scale{1.0f, 1.0f};
-    Vector3 color{255, 0, 0};
+    glm::vec2 scale{1.0f, 1.0f};
+    glm::vec3 color{255, 0, 0};
 
     if (mIsVisible) {
-        auto rect = Vector4::UnitRect;
+        auto rect = glm::vec4(0, 0, 1, 1);
         if (!mAnimations.empty()) {
             try {
                 rect = mSpriteSheetData.at(

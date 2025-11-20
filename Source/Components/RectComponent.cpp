@@ -19,14 +19,14 @@ RectComponent::~RectComponent()
 
 }
 
-void RectComponent::Draw(class Renderer* renderer, Vector2 position, float rotation, Vector2 cameraPos)
+void RectComponent::Draw(class Renderer* renderer, glm::vec2 position, float rotation, glm::vec2 cameraPos)
 {
     // TODO: restore behavior
     bool mIsVisible = true;
-    Vector3 mColor{255, 0, 0};
+    glm::vec3 mColor{255, 0, 0};
 
     if(mIsVisible)
     {
-        renderer->DrawRect(position, Vector2(mWidth, mHeight), rotation, mColor, cameraPos, mMode);
+        renderer->DrawRect(position, glm::vec2(mWidth, mHeight), rotation, mColor, cameraPos, mMode);
     }
 }
