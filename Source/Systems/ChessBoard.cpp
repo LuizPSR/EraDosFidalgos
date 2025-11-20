@@ -48,25 +48,25 @@ void RenderScene(ChessBoard &board, const Camera &camera, Renderer &renderer)
 
 void ChessBoardNS::RegisterSystems(const flecs::world& ecs)
 {
-    ecs.component<ChessBoardScene>().add(flecs::Singleton);
-    ecs.system<Camera, const InputState>("UpdateCamera")
+    void(ecs.component<ChessBoardScene>().add(flecs::Singleton));
+    void(ecs.system<Camera, const InputState>("UpdateCamera")
         .kind(flecs::OnLoad)
         .run(UpdateCamera)
-        .disable();
+        .disable());
 
-    ecs.system<ChessBoard, const Camera, Renderer>("Render3DScene")
+    void(ecs.system<ChessBoard, const Camera, Renderer>("Render3DScene")
         .kind(flecs::PreStore)
         .each(RenderScene)
-        .disable();
+        .disable());
 
-    ecs.system("SceneUI")
+    void(ecs.system("SceneUI")
         .kind(flecs::OnUpdate)
         .run([](const flecs::iter &it)
         {
             ImGui::Begin("Scene Loaded");
             ImGui::End();
         })
-        .disable();
+        .disable());
 }
 
 void ChessBoardNS::Initialize(const flecs::world& ecs)
@@ -75,29 +75,20 @@ void ChessBoardNS::Initialize(const flecs::world& ecs)
     auto scene = ecs.entity<ChessBoardScene>();
 
     // Add camera to the scene entity
-    scene.emplace<Camera>(Camera{
-        .mPosition{50.0f, 50.0f, 0.0f},
-        .mTarget{0.0f, 0.0f, 0.0f},
-        .mZoomLevel = 50.0f,
-    });
+    void(scene.add<Camera>());
 
     // Add board component to the scene
-    scene.emplace<ChessBoard>();
+    void(scene.add<ChessBoard>());
 
-    ecs.entity("UpdateCamera").enable();
-    ecs.entity("Render3DScene").enable();
-    ecs.entity("SceneUI").enable();
-
-    ecs.each([](Camera &camera)
-    {
-        camera.RecalculateView();
-    });
+    void(ecs.entity("UpdateCamera").enable());
+    void(ecs.entity("Render3DScene").enable());
+    void(ecs.entity("SceneUI").enable());
 }
 
 void ChessBoardNS::Destroy(const flecs::world& ecs)
 {
     ecs.entity<ChessBoardScene>().destruct();
-    ecs.entity("UpdateCamera").disable();
-    ecs.entity("Render3DScene").disable();
-    ecs.entity("SceneUI").disable();
+    void(ecs.entity("UpdateCamera").disable());
+    void(ecs.entity("Render3DScene").disable());
+    void(ecs.entity("SceneUI").disable());
 }
