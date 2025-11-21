@@ -8,7 +8,6 @@
 
 #pragma  once
 #include <random>
-#include <cmath>
 #include <glm/glm.hpp>
 
 class Random

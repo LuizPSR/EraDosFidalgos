@@ -16,33 +16,26 @@
 bool Initialize(const flecs::world &ecs)
 {
     Random::Init();
-    if (SDL_Init(SDL_INIT_VIDEO) == false)
-    {
-        SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
-        return false;
-    }
 
-    SDL_Window *window = SDL_CreateWindow("Era dos Fidalgos", SDL_WINDOW_MAXIMIZED, SDL_WINDOW_MAXIMIZED, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-    if (!window)
-    {
-        SDL_Log("Failed to create window: %s", SDL_GetError());
-        return false;
-    }
-
-    SDL_SetWindowMinimumSize(window, 400, 300);
-
-    ecs.component<Renderer>()
+    // Init window
+    void(ecs.component<Window>()
         .add(flecs::Singleton)
-        .emplace<Renderer>(window);
+        .emplace<Window>());
+    auto &window = ecs.get_mut<Window>();
+    if (window.Initialize() == false)
+        return false;
+
+    // Init renderer
+    void(ecs.component<Renderer>()
+        .add(flecs::Singleton)
+        .emplace<Renderer>());
     auto &renderer = ecs.get_mut<Renderer>();
-    if (renderer.Initialize() == false)
-    {
+    if (renderer.Initialize(window) == false)
         return false;
-    }
 
-    ecs.entity<InputState>()
+    void(ecs.entity<InputState>()
         .add(flecs::Singleton)
-        .add<InputState>();
+        .add<InputState>());
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -53,8 +46,10 @@ bool Initialize(const flecs::world &ecs)
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplSDL3_InitForOpenGL(window, renderer.mContext);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    if (ImGui_ImplSDL3_InitForOpenGL(window.sdlWindow, renderer.mContext) == false)
+        return false;
+    if (ImGui_ImplOpenGL3_Init("#version 330") == false)
+        return false;
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -92,14 +87,21 @@ void RegisterSystems(const flecs::world &ecs)
                 SDL_Log("I've been clicked!");
             }
 
-            const flecs::world &ecs = it.world();
-            if (ImGui::Button("Create Scene"))
+            glm::vec2 mPos;
+            SDL_GetRelativeMouseState(&mPos.x, &mPos.y);
+            ImGui::Text("Mouse Relative: %.1f %.1f", mPos.x, mPos.y);
+
+            static bool chessboardActive = false;
+            if (ImGui::Checkbox("Chessboard", &chessboardActive))
             {
-                ChessBoardNS::Initialize(ecs);
-            }
-            if (ImGui::Button("Destroy Scene"))
-            {
-                ChessBoardNS::Destroy(ecs);
+                const flecs::world &ecs = it.world();
+                if (!chessboardActive)
+                {
+                    ChessBoardNS::Destroy(ecs);
+                } else
+                {
+                    ChessBoardNS::Initialize(ecs);
+                }
             }
 
             ImGui::End();
@@ -129,8 +131,7 @@ void ProcessInput(const flecs::world &ecs)
     auto &renderer = ecs.get_mut<Renderer>();
     auto &input = ecs.get_mut<InputState>();
 
-    input.MouseDeltaX = 0.0f;
-    input.MouseDeltaY = 0.0f;
+    input.MouseDelta = glm::vec2{0.0f};
     input.MouseScrollAmount = 0.0f;
 
     SDL_Event event;
@@ -188,8 +189,8 @@ void ProcessInput(const flecs::world &ecs)
                 if (input.IsRightMouseButtonDown || input.IsMiddleMouseButtonDown)
                 {
                     // Use relative motion for panning
-                    input.MouseDeltaX = (float)event.motion.xrel;
-                    input.MouseDeltaY = (float)event.motion.yrel;
+                    input.MouseDelta.x = (float)event.motion.xrel;
+                    input.MouseDelta.y = (float)event.motion.yrel;
                 }
                 break;
             }

@@ -47,6 +47,8 @@ add_executable(${PROJECT_NAME}
         Source/Components/Camera.h
         Source/Systems/ChessBoard.cpp
         Source/Systems/ChessBoard.h
+        Source/Components/Window.cpp
+        Source/Components/Window.h
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

@@ -1,10 +1,10 @@
 #pragma once
 #include <string>
 #include <unordered_map>
-#include <SDL3/SDL.h>
 #include <glm/glm.hpp>
 #include "VertexArray.h"
 #include "Texture.h"
+#include "../Components/Window.h"
 
 enum class RendererMode
 {
@@ -14,10 +14,10 @@ enum class RendererMode
 
 struct Renderer
 {
-	explicit Renderer(SDL_Window* window);
+	explicit Renderer();
 	~Renderer();
 
-	bool Initialize();
+	bool Initialize(const Window &window);
 	void Shutdown();
 
     void DrawRect(const glm::vec2 &position, const glm::vec2 &size,  float rotation,
@@ -39,11 +39,8 @@ struct Renderer
 
 	void UpdateOrthographicMatrix(int width, int height);
 
-	glm::vec2 GetWindowSize() const;
-	glm::vec2 GetMousePosNDC() const;
-
 	// OpenGL context
-	SDL_GLContext mContext;
+	SDL_GLContext mContext = nullptr;
 
     void Draw(RendererMode mode, const glm::mat4 &modelMatrix, const glm::vec2 &cameraPos, VertexArray *vertices,
               const glm::vec3 &color,  Texture *texture = nullptr, const glm::vec4 &textureRect = glm::vec4(0, 0, 1, 1), float textureFactor = 1.0f);
@@ -52,19 +49,19 @@ struct Renderer
     void CreateSpriteVerts();
 
 	// Basic shader
-	class Shader* mBaseShader;
+	class Shader* mBaseShader = nullptr;
 
 	// Chess Shader
-	class Shader* mChessShader;
+	class Shader* mChessShader = nullptr;
 
     // Sprite vertex array
-    class VertexArray *mSpriteVerts;
+    class VertexArray * mSpriteVerts = nullptr;
 
 	// Window
-	SDL_Window* mWindow;
+	SDL_Window* mWindow = nullptr;
 
 	// Ortho projection for 2D shaders
-	glm::mat4 mOrthoProjection;
+	glm::mat4 mOrthoProjection{};
 
     // Map of textures loaded
     std::unordered_map<std::string, class Texture*> mTextures;

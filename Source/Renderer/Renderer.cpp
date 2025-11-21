@@ -5,14 +5,10 @@
 #include "Texture.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
+#include <SDL3/SDL.h>
 
-Renderer::Renderer(SDL_Window *window)
-    : mContext(nullptr)
-      , mBaseShader(nullptr)
-      , mSpriteVerts(nullptr)
-      , mWindow(window)
-{
-}
+Renderer::Renderer()
+{}
 
 Renderer::~Renderer()
 {
@@ -22,8 +18,10 @@ Renderer::~Renderer()
     mSpriteVerts = nullptr;
 }
 
-bool Renderer::Initialize()
+bool Renderer::Initialize(const Window &window)
 {
+    mWindow = window.sdlWindow;
+
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -42,12 +40,12 @@ bool Renderer::Initialize()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
     // Create an OpenGL context
-    mContext = SDL_GL_CreateContext(mWindow);
+    mContext = SDL_GL_CreateContext(window.sdlWindow);
     if (!mContext) {
         // Handle error: context creation failed
         return false;
     }
-    SDL_GL_MakeCurrent(mWindow, mContext);
+    SDL_GL_MakeCurrent(window.sdlWindow, mContext);
 
     GLenum glewError = glewInit();
     if (glewError != GLEW_OK)
@@ -103,11 +101,6 @@ void Renderer::Shutdown()
     {
         SDL_GL_DestroyContext(mContext);
         mContext = nullptr;
-    }
-    if (mWindow)
-    {
-        SDL_DestroyWindow(mWindow);
-        mWindow = nullptr;
     }
 }
 
@@ -187,23 +180,6 @@ void Renderer::UpdateOrthographicMatrix(int width, int height)
     mOrthoProjection = glm::ortho(x * -.5f, x * .5f, y * -.5f, y * .5f, -1.0f, 1.0f);
     mBaseShader->SetMatrixUniform("uOrthoProj", mOrthoProjection);
     glViewport(0, 0, width, height);
-}
-
-glm::vec2 Renderer::GetWindowSize() const
-{
-    int width, height;
-    SDL_GetWindowSize(mWindow, &width, &height);
-    return glm::vec2{width, height};
-}
-
-glm::vec2 Renderer::GetMousePosNDC() const
-{
-    const glm::vec2 sz = GetWindowSize();
-    glm::vec2 mousePos;
-    SDL_GetMouseState(&mousePos.x, &mousePos.y);
-    mousePos.x = 2.0f * mousePos.x / sz.x - 1.0f;
-    mousePos.y = 1.0f - 2.0f * mousePos.y / sz.y;
-    return mousePos;
 }
 
 void Renderer::Draw(RendererMode mode, const glm::mat4 &modelMatrix, const glm::vec2 &cameraPos, VertexArray *vertices,
