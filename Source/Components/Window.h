@@ -4,6 +4,8 @@
 
 struct Window
 {
+    ~Window();
+
     SDL_Window *sdlWindow = nullptr;
 
     bool Initialize();

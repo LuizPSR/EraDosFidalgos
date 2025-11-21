@@ -1,5 +1,14 @@
 #include "Window.h"
 
+Window::~Window()
+{
+    if (sdlWindow != nullptr)
+    {
+        SDL_DestroyWindow(sdlWindow);
+        sdlWindow = nullptr;
+    }
+}
+
 bool Window::Initialize()
 {
     SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "1");
