@@ -10,6 +10,7 @@ list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/deps")
 
 find_package(SDL3 3 REQUIRED)
 find_package(SDL3_image 3 REQUIRED)
+find_package(SDL3_mixer REQUIRED)
 find_package(GLEW REQUIRED CONFIG)
 find_package(Flecs REQUIRED CONFIG)
 find_package(GLM REQUIRED CONFIG)
@@ -56,6 +57,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         flecs::flecs
         SDL3::SDL3
         SDL3_image::SDL3_image
+        SDL3_mixer::SDL3_mixer
         GLEW::glew
         tomlplusplus::tomlplusplus
         glm::glm
