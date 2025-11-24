@@ -1,6 +1,4 @@
 #include <algorithm>
-#include <vector>
-#include <map>
 #include <fstream>
 #include <SDL3/SDL.h>
 #include <imgui.h>
@@ -12,8 +10,10 @@
 #include "Components/Camera.h"
 #include "Renderer/Renderer.h"
 #include "Systems/ChessBoard.h"
+#include "Systems/Events.h"
+#include <filesystem>
 
-bool Initialize(const flecs::world &ecs)
+bool Initialize(flecs::world &ecs)
 {
     Random::Init();
 
@@ -40,9 +40,17 @@ bool Initialize(const flecs::world &ecs)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    // Saves ini file in game config directory
+    static char iniPathBuf[256] = {};
+    const auto iniPath = std::filesystem::path(SDL_GetPrefPath("dcc_jogos", "EraDosFidalgos")) / "imgui.ini";
+    strncpy(iniPathBuf, iniPath.c_str(), 255);
+    io.IniFilename = iniPathBuf;
+
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
@@ -60,7 +68,7 @@ bool Initialize(const flecs::world &ecs)
     return true;
 }
 
-void RegisterSystems(const flecs::world &ecs)
+void RegisterSystems(flecs::world &ecs)
 {
     ecs.system("ReadInput")
         .kind(flecs::OnLoad)
@@ -74,6 +82,7 @@ void RegisterSystems(const flecs::world &ecs)
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
+            ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
         });
     ecs.system("UpdateUI")
         .kind(flecs::OnUpdate)
@@ -94,15 +103,19 @@ void RegisterSystems(const flecs::world &ecs)
             static bool chessboardActive = false;
             if (ImGui::Checkbox("Chessboard", &chessboardActive))
             {
-                const flecs::world &ecs = it.world();
+                flecs::world ecs = it.world();
                 if (!chessboardActive)
                 {
-                    ChessBoardNS::Destroy(ecs);
+                    ChessBoardScene::Stop(ecs.import<ChessBoardScene>().disable());
                 } else
                 {
-                    ChessBoardNS::Initialize(ecs);
+                    ChessBoardScene::Start(ecs.import<ChessBoardScene>().enable());
                 }
             }
+
+            static bool showDemo = false;
+            ImGui::Checkbox("Show ImGUI Demo", &showDemo);
+            if (showDemo) ImGui::ShowDemoWindow();
 
             ImGui::End();
         });
@@ -113,7 +126,11 @@ void RegisterSystems(const flecs::world &ecs)
             renderer.Clear();
         });
 
-    ChessBoardNS::RegisterSystems(ecs);
+    // Initialize CheckerBoard systems
+    void(ecs.import<ChessBoardScene>().disable());
+
+    // Initialize Event systems
+    void(ecs.import<EventsSampleScene>().disable());
 
     ecs.system<Renderer>("PresentRender")
         .kind(flecs::OnStore)

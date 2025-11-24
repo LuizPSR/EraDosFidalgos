@@ -6,8 +6,7 @@
 
 int main(int argc, char* argv[])
 {
-    std::filesystem::path exePath = std::filesystem::canonical(argv[0]).parent_path();
-    std::filesystem::current_path(exePath);
+    std::filesystem::current_path(SDL_GetBasePath());
 
     flecs::world ecs(argc, argv);
     if (Initialize(ecs) == false)

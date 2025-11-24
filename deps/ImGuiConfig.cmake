@@ -3,7 +3,7 @@ include(FetchContent)
 FetchContent_Declare(
         imgui_repo
         GIT_REPOSITORY https://github.com/ocornut/imgui.git
-        GIT_TAG        v1.92.3
+        GIT_TAG        v1.92.3-docking
         GIT_SHALLOW    TRUE
 )
 
@@ -22,7 +22,7 @@ set(IMGUI_SOURCES
 add_library(ImGui STATIC ${IMGUI_SOURCES})
 target_compile_options(ImGui PRIVATE -fPIC)
 
-find_package(SDL3 REQUIRED)
+find_package(SDL3 REQUIRED CONFIG)
 find_package(GLEW REQUIRED CONFIG)
 
 target_include_directories(ImGui PUBLIC
@@ -30,4 +30,4 @@ target_include_directories(ImGui PUBLIC
         $<BUILD_INTERFACE:${imgui_repo_SOURCE_DIR}/backends>
 )
 
-target_link_libraries(ImGui PRIVATE ${SDL3_LIBRARIES} GLEW::glew)
+target_link_libraries(ImGui PRIVATE SDL3::SDL3 GLEW::glew)

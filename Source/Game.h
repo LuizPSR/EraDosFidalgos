@@ -2,9 +2,9 @@
 #include <flecs.h>
 #include <glm/glm.hpp>
 
-bool Initialize(const flecs::world &ecs);
+bool Initialize(flecs::world &ecs);
 void ProcessInput(const flecs::world &ecs);
-void RegisterSystems(const flecs::world &ecs);
+void RegisterSystems(flecs::world &ecs);
 
 struct InputState
 {

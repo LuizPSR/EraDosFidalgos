@@ -8,9 +8,9 @@ project(${PROJECT_NAME})
 
 list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/deps")
 
-find_package(SDL3 3 REQUIRED)
-find_package(SDL3_image 3 REQUIRED)
-find_package(SDL3_mixer REQUIRED)
+find_package(SDL3 REQUIRED CONFIG)
+find_package(SDL3_image REQUIRED CONFIG)
+find_package(SDL3_mixer REQUIRED CONFIG)
 find_package(GLEW REQUIRED CONFIG)
 find_package(Flecs REQUIRED CONFIG)
 find_package(GLM REQUIRED CONFIG)
@@ -50,6 +50,8 @@ add_executable(${PROJECT_NAME}
         Source/Systems/ChessBoard.h
         Source/Components/Window.cpp
         Source/Components/Window.h
+        Source/Systems/Events.cpp
+        Source/Systems/Events.h
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
