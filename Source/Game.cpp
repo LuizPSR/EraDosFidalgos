@@ -130,7 +130,7 @@ void RegisterSystems(flecs::world &ecs)
     void(ecs.import<ChessBoardScene>().disable());
 
     // Initialize Event systems
-    void(ecs.import<EventsSampleScene>().disable());
+    void(ecs.import<EventsSampleScene>());
 
     ecs.system<Renderer>("PresentRender")
         .kind(flecs::OnStore)

@@ -20,3 +20,10 @@ struct EventSchedule
         return mDay < o.mDay;
     }
 };
+
+struct FiredEvent {};
+
+struct SamplePopup
+{
+    std::string mMessage;
+};
