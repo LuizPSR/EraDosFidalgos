@@ -82,7 +82,16 @@ void RegisterSystems(flecs::world &ecs)
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
-            ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+
+            // Limit UI screen space
+            ImGuiViewport* viewport = ImGui::GetMainViewport();
+            float borderThickness = 16.0f;
+            viewport->WorkPos.x += borderThickness;
+            viewport->WorkPos.y += borderThickness;
+            viewport->WorkSize.x -= (2 * borderThickness);
+            viewport->WorkSize.y -= (2 * borderThickness);
+
+            ImGui::DockSpaceOverViewport(0, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
         });
     ecs.system("UpdateUI")
         .kind(flecs::OnUpdate)

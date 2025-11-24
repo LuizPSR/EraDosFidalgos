@@ -9,15 +9,15 @@ struct EventsSampleScene
 
 struct GameTime
 {
-    size_t mDay;
+    float mTime = 0, mSpeed = 0, mSpeedAccel = 0;
 };
 
 struct EventSchedule
 {
-    size_t mDay;
+    float mTime;
     bool operator<(const EventSchedule &o) const
     {
-        return mDay < o.mDay;
+        return mTime < o.mTime;
     }
 };
 

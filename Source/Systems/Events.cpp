@@ -1,12 +1,26 @@
 #include "Events.h"
 
+#include <cmath>
+
 #include "imgui.h"
 
 EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 {
     void(ecs.component<GameTime>()
         .add(flecs::Singleton)
-        .emplace<GameTime>(GameTime{ .mDay = 0 }));
+        .emplace<GameTime>(GameTime{}));
+
+    ecs.system<GameTime>()
+        .each([](const flecs::iter &it, size_t, GameTime &gameTime)
+        {
+            float speedChange = it.delta_time() * gameTime.mSpeedAccel;
+            if (gameTime.mSpeed < -speedChange)
+                gameTime.mSpeed = 0;
+            else
+                gameTime.mSpeed += speedChange;
+            gameTime.mSpeedAccel *= powf(0.1, it.delta_time());
+            gameTime.mTime += it.delta_time() * gameTime.mSpeed;
+        });
 
     ecs.system<const EventSchedule, const GameTime>()
         .order_by<EventSchedule>([](
@@ -15,14 +29,19 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
         {
             return (*b < *a) - (*a < *b);
         })
-        .each([](flecs::iter &it, size_t i, const EventSchedule &schedule, const GameTime &gameTime)
+        .run([](flecs::iter &it)
         {
-            if (schedule.mDay > gameTime.mDay)
+            while (it.next())
             {
-                // stop iteration?
-                return;
+                auto &gameTime = it.field_at<const GameTime>(1, 0);
+                for (const size_t i : it)
+                {
+                    const auto &schedule = it.field_at<const EventSchedule>(0, i);
+                    if (schedule.mTime > gameTime.mTime)
+                        return it.fini();
+                    void(it.entity(i).add<FiredEvent>());
+                }
             }
-            void(it.entity(i).add<FiredEvent>());
         });
 
     ecs.system<const SamplePopup, const FiredEvent>()
@@ -31,14 +50,12 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
             auto name = "Popup##" + std::to_string(e.id());
             if (ImGui::Begin(name.c_str(), nullptr, ImGuiWindowFlags_NoDocking))
             {
-                // ImGui::PushID(e.id());
                 ImGui::Text("ID %lu", e.id());
                 ImGui::Text("%s", p.mMessage.c_str());
                 if (ImGui::Button("Close me"))
                 {
                     e.destruct();
                 }
-                // ImGui::PopID();
             }
             ImGui::End();
         });
@@ -48,20 +65,24 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
         {
             if (ImGui::Begin("Time Controls"))
             {
-                ImGui::Text("Current day: %lu", t.mDay);
-                if (ImGui::Button("Advance"))
-                {
-                    t.mDay += 1;
-                }
+                ImGui::Text("Day %.0f %02.0f:%02.0f", t.mTime,
+                    fmodf(t.mTime, 1.0f) * 24,
+                    fmodf(t.mTime, 1.0f / 24) * 24 * 60);
+                ImGui::SliderFloat("Speed", &t.mSpeed, 0.0f, 2.0f, "%.2f d/s");
+                ImGui::SliderFloat("Accel", &t.mSpeedAccel, -0.5f, 0.5f, "%.2f d/s²");
             }
             ImGui::End();
         });
 
     void(ecs.entity()
-        .emplace<EventSchedule>(EventSchedule{ .mDay = 5 })
+        .emplace<SamplePopup>(SamplePopup{ "Bem vindo ao Era dos Fidalgos!" })
+        .add<FiredEvent>());
+
+    void(ecs.entity()
+        .emplace<EventSchedule>(EventSchedule{ .mTime = 5 })
         .emplace<SamplePopup>(SamplePopup{ "I popped up at day 5" }));
 
     void(ecs.entity()
-        .emplace<EventSchedule>(EventSchedule{ .mDay = 10 })
+        .emplace<EventSchedule>(EventSchedule{ .mTime = 10 })
         .emplace<SamplePopup>(SamplePopup{ "I popped up at day 10" }));
 }
