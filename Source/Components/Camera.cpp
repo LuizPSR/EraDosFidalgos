@@ -77,48 +77,49 @@ void UpdateCamera(Camera &camera, const InputState &input, const Window &window,
 
     // Receive Commands
     const auto &io = ImGui::GetIO();
-    if (io.WantCaptureKeyboard || io.WantCaptureMouse)
+    if (!io.WantCaptureKeyboard)
     {
-        return;
+        const float keyAccelSpeed = camera.mMoveSpeed * deltaTime;
+        if (state[SDL_SCANCODE_W]) {
+            velocity.y += keyAccelSpeed;
+        }
+        if (state[SDL_SCANCODE_S]) {
+            velocity.y -= keyAccelSpeed;
+        }
+        if (state[SDL_SCANCODE_A]) {
+            velocity.x -= keyAccelSpeed;
+        }
+        if (state[SDL_SCANCODE_D]) {
+            velocity.x += keyAccelSpeed;
+        }
     }
 
-    const float keyAccelSpeed = camera.mMoveSpeed * deltaTime;
-    if (state[SDL_SCANCODE_W]) {
-        velocity.y += keyAccelSpeed;
-    }
-    if (state[SDL_SCANCODE_S]) {
-        velocity.y -= keyAccelSpeed;
-    }
-    if (state[SDL_SCANCODE_A]) {
-        velocity.x -= keyAccelSpeed;
-    }
-    if (state[SDL_SCANCODE_D]) {
-        velocity.x += keyAccelSpeed;
-    }
-
-    const float edgeAccelSpeed = camera.mEdgeScrollSpeed * deltaTime;
-    const auto &mousePosNDC = window.GetMousePosNDC();
-    if (mousePosNDC.y > 0.99) {
-        velocity.y += edgeAccelSpeed;
-    }
-    if (mousePosNDC.y < -0.99) {
-        velocity.y -= edgeAccelSpeed;
-    }
-    if (mousePosNDC.x < -0.99) {
-        velocity.x -= edgeAccelSpeed;
-    }
-    if (mousePosNDC.x > 0.99) {
-        velocity.x += edgeAccelSpeed;
-    }
-
-    // Mouse inputs don't take deltaTime because they're in deltas already
-    if (input.IsRightMouseButtonDown || input.IsMiddleMouseButtonDown)
+    if (!io.WantCaptureMouse)
     {
-        velocity.x = -input.MouseDelta.x * camera.mPanSpeed;
-        velocity.y = input.MouseDelta.y * camera.mPanSpeed;
-    }
-    if (input.MouseScrollAmount != 0.0f)
-    {
-        camera.mZoomInertia -= input.MouseScrollAmount * camera.mZoomSpeed;
+        const float edgeAccelSpeed = camera.mEdgeScrollSpeed * deltaTime;
+        const auto &mousePosNDC = window.GetMousePosNDC();
+        if (mousePosNDC.y > 0.99) {
+            velocity.y += edgeAccelSpeed;
+        }
+        if (mousePosNDC.y < -0.99) {
+            velocity.y -= edgeAccelSpeed;
+        }
+        if (mousePosNDC.x < -0.99) {
+            velocity.x -= edgeAccelSpeed;
+        }
+        if (mousePosNDC.x > 0.99) {
+            velocity.x += edgeAccelSpeed;
+        }
+
+        // Mouse inputs don't take deltaTime because they're in deltas already
+        if (input.IsRightMouseButtonDown || input.IsMiddleMouseButtonDown)
+        {
+            velocity.x = -input.MouseDelta.x * camera.mPanSpeed;
+            velocity.y = input.MouseDelta.y * camera.mPanSpeed;
+        }
+        if (input.MouseScrollAmount != 0.0f)
+        {
+            camera.mZoomInertia -= input.MouseScrollAmount * camera.mZoomSpeed;
+        }
     }
 }
