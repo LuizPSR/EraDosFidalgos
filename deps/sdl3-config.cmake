@@ -2,8 +2,8 @@ include(FetchContent)
 
 FetchContent_Declare(
         SDL3
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-        GIT_TAG        6a1218c1cc9fe716089dcf9b25754854be9292c8
+        URL      https://github.com/libsdl-org/SDL/archive/52a4366e544fbaf6571d914361dbac323467206a.tar.gz
+        URL_HASH SHA256=18cd8e7c6d383f42e0737fe56bc8a8d6fda4b74daefd6af8813c1edf90baf638
 )
 
 FetchContent_MakeAvailable(SDL3)

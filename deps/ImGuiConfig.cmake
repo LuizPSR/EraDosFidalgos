@@ -2,9 +2,8 @@ include(FetchContent)
 
 FetchContent_Declare(
         imgui_repo
-        GIT_REPOSITORY https://github.com/ocornut/imgui.git
-        GIT_TAG        v1.92.3-docking
-        GIT_SHALLOW    TRUE
+        URL            https://github.com/ocornut/imgui/archive/v1.92.3-docking.tar.gz
+        URL_HASH       SHA256=fd0f88fcc593faa4d536c02baded6abc85463b9deb2d75ee829fed6d5dd48e0e
 )
 
 FetchContent_MakeAvailable(imgui_repo)

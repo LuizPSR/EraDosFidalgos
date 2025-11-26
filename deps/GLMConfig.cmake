@@ -2,10 +2,8 @@ include(FetchContent)
 
 FetchContent_Declare(
         glm_repo
-        GIT_REPOSITORY https://github.com/g-truc/glm.git
-        GIT_TAG        "1.0.2"
-        GIT_SHALLOW    TRUE
-        BUILD_AS_SUBDIRECTORY ON
+        URL            https://github.com/g-truc/glm/archive/1.0.2.tar.gz
+        URL_HASH       SHA256=19edf2e860297efab1c74950e6076bf4dad9de483826bc95e2e0f2c758a43f65
 )
 
 FetchContent_MakeAvailable(glm_repo)
