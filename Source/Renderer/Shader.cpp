@@ -1,5 +1,5 @@
 #include <SDL3/SDL.h>
-#include "Shader.h"
+#include "Shader.hpp"
 #include <fstream>
 #include <sstream>
 

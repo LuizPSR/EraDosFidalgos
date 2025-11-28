@@ -2,7 +2,7 @@
 #include <SDL3/SDL.h>
 #include <thread>
 
-#include "Game.h"
+#include "Game.hpp"
 
 int main(int argc, char* argv[])
 {

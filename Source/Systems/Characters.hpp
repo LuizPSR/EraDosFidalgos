@@ -1,44 +1,10 @@
 #pragma once
-#include <flecs.h>
 #include <string>
-
-struct EventsSampleScene
-{
-    explicit EventsSampleScene(const flecs::world &ecs);
-};
-
-struct GameTime
-{
-    float mTime = 0, mSpeed = 0, mSpeedAccel = 0;
-};
-
-struct EventSchedule
-{
-    float mTime;
-    bool operator<(const EventSchedule &o) const
-    {
-        return mTime < o.mTime;
-    }
-};
-
-struct FiredEvent {};
-
-struct SamplePopup
-{
-    std::string mMessage;
-};
-
-// TODO: Organize the below structs
+#include <flecs.h>
 
 struct Title
 {
     std::string name;
-};
-
-struct Province
-{
-    std::string name;
-    float income;
 };
 
 struct Character
@@ -51,6 +17,7 @@ struct Dynasty
     std::string name;
 };
 
+// -- RELATIONS --
 // Character to Title / Symmetric
 struct Ruler {};
 
@@ -66,11 +33,9 @@ struct DynastyMember {};
 // Dynasty to Character / Symmetric
 struct DynastyHead {};
 
-// Province to Title or Title to Title
-struct InRealm {};
-
+// -- TAG --
 // Whether to show character details
-struct ShowDetails {};
+struct ShowCharacterDetails {};
 
 struct CharactersModule
 {

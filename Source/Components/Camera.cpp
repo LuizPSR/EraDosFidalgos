@@ -1,10 +1,10 @@
-#include "Camera.h"
+#include "Camera.hpp"
 
 #include <algorithm>
 #include <SDL3/SDL.h>
 #include "imgui.h"
-#include "./Window.h"
-#include "../Game.h"
+#include "Window.hpp"
+#include "Game.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/gtx/norm.inl"

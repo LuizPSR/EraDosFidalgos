@@ -1,5 +1,5 @@
 #include <SDL3_image/SDL_image.h>
-#include "Texture.h"
+#include "Texture.hpp"
 
 Texture::Texture()
 : mTextureID(0)

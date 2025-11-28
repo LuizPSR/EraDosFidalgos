@@ -2,11 +2,11 @@
 
 #include <flecs.h>
 #include <glm/glm.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
-#include "../Renderer/Renderer.h"
-#include "../Components/Window.h"
-#include "../Components/Camera.h"
-#include "glm/ext/matrix_transform.hpp"
+#include "Renderer/Renderer.hpp"
+#include "Components/Window.hpp"
+#include "Components/Camera.hpp"
 
 struct ChessBoardScene
 {

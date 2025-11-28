@@ -1,8 +1,8 @@
-#include "ChessBoard.h"
+#include "ChessBoard.hpp"
 
 #include "imgui.h"
-#include "../Renderer/Shader.h"
-#include "../Game.h"
+#include "Game.hpp"
+#include "Renderer/Shader.hpp"
 
 ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
 {

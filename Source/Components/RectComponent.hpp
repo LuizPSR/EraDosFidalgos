@@ -5,8 +5,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "../Renderer/VertexArray.h"
-#include "../Renderer/Renderer.h"
+#include "Renderer/Renderer.hpp"
 
 struct RectComponent
 {

@@ -2,9 +2,7 @@
 // Created by Lucas N. Ferreira on 09/10/25.
 //
 
-#include "RectComponent.h"
-#include "../Renderer/Renderer.h"
-#include "../Game.h"
+#include "RectComponent.hpp"
 
 RectComponent::RectComponent(class Actor* owner, int width, int height, RendererMode mode, int drawOrder)
     : mMode(mode)

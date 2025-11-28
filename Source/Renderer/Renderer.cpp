@@ -1,11 +1,14 @@
 #include <GL/glew.h>
-#include "Renderer.h"
-#include "Shader.h"
-#include "VertexArray.h"
-#include "Texture.h"
-#include "glm/ext/matrix_clip_space.hpp"
-#include "glm/ext/matrix_transform.hpp"
 #include <SDL3/SDL.h>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include "Renderer.hpp"
+
+#include <filesystem>
+
+#include "Shader.hpp"
+#include "VertexArray.hpp"
+#include "Texture.hpp"
 
 Renderer::Renderer()
 {}
@@ -70,7 +73,7 @@ bool Renderer::Initialize(const Window &window)
     CreateSpriteVerts();
 
     // Set the clear color to light grey
-    glClearColor(0.419f, 0.549f, 1.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // Enable alpha blending on textures
     glEnable(GL_BLEND);
@@ -220,17 +223,16 @@ void Renderer::Draw(RendererMode mode, const glm::mat4 &modelMatrix, const glm::
     }
 }
 
-
 bool Renderer::LoadShaders()
 {
     // Create sprite shader
     mBaseShader = new Shader();
-    if (!mBaseShader->Load("../Shaders/Base")) {
+    if (!mBaseShader->Load(std::filesystem::path(SDL_GetBasePath()) / "Shaders/Base")) {
         return false;
     }
 
     mChessShader = new Shader();
-    if (!mChessShader->Load("../Shaders/Chess")) {
+    if (!mChessShader->Load(std::filesystem::path(SDL_GetBasePath()) / "Shaders/Chess")) {
         return false;
     }
 

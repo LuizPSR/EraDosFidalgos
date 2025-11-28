@@ -1,7 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "flecs.h"
-#include "Window.h"
+#include "Window.hpp"
 
 struct Camera
 {

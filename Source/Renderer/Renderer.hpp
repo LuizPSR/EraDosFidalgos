@@ -2,9 +2,9 @@
 #include <string>
 #include <unordered_map>
 #include <glm/glm.hpp>
-#include "VertexArray.h"
-#include "Texture.h"
-#include "../Components/Window.h"
+#include "Renderer/VertexArray.hpp"
+#include "Renderer/Texture.hpp"
+#include "Components/Window.hpp"
 
 enum class RendererMode
 {

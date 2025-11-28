@@ -17,40 +17,11 @@ find_package(GLM REQUIRED CONFIG)
 find_package(ImGui REQUIRED CONFIG)
 find_package(TOML REQUIRED CONFIG)
 
-set(ASSETS_DIR "${PROJECT_SOURCE_DIR}/Assets")
-set(ASSET_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${ASSETS_DIR}" DESTINATION "${ASSET_DESTINATION_DIR}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(${PROJECT_NAME}
-        Source/Renderer/Shader.cpp
-        Source/Renderer/Shader.h
-        Source/Main.cpp
-        Source/Random.cpp
-        Source/Random.h
-        Source/Game.cpp
-        Source/Game.h
-        Source/Renderer/Renderer.cpp
-        Source/Renderer/Renderer.h
-        Source/Renderer/VertexArray.h
-        Source/Renderer/VertexArray.cpp
-        Source/Renderer/Texture.cpp
-        Source/Renderer/Texture.h
-        Source/Entities/MapTile.h
-        Source/Components/AnimatorComponent.cpp
-        Source/Components/AnimatorComponent.h
-        Source/Components/RectComponent.cpp
-        Source/Components/RectComponent.h
-        Source/Entities/Settlement.h
-        Source/Entities/Army.h
-        Source/Components/Camera.cpp
-        Source/Components/Camera.h
-        Source/Systems/ChessBoard.cpp
-        Source/Systems/ChessBoard.h
-        Source/Components/Window.cpp
-        Source/Components/Window.h
-        Source/Systems/Events.cpp
-        Source/Systems/Events.h
-)
+file(GLOB_RECURSE HEADERS "Source/*.hpp")
+file(GLOB_RECURSE SOURCES "Source/*.cpp")
+add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         ImGui
@@ -62,3 +33,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         tomlplusplus::tomlplusplus
         glm::glm
         m) # Math
+
+set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source")
+target_include_directories(${PROJECT_NAME} PUBLIC ${SOURCE_DIR})

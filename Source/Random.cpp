@@ -6,7 +6,7 @@
 // See LICENSE in root directory for full details.
 // ----------------------------------------------------------------
 
-#include "Random.h"
+#include "Random.hpp"
 
 void Random::Init()
 {

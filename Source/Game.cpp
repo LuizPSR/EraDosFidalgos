@@ -6,12 +6,12 @@
 #include <imgui_impl_opengl3.h>
 #include <filesystem>
 
-#include "Game.h"
-#include "Random.h"
-#include "Components/Camera.h"
-#include "Renderer/Renderer.h"
-#include "Systems/ChessBoard.h"
-#include "Systems/Events.h"
+#include "Game.hpp"
+#include "Random.hpp"
+#include "Renderer/Renderer.hpp"
+#include "Systems/ChessBoard.hpp"
+#include "Systems/Events.hpp"
+#include "Systems/Characters.hpp"
 
 struct MainMenuModule
 {

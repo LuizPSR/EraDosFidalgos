@@ -2,12 +2,11 @@
 // Created by Lucas N. Ferreira on 28/09/23.
 //
 
-#include "AnimatorComponent.h"
-#include "../Game.h"
-#include "../Json.h"
-#include "../Renderer/Texture.h"
-#include "../Renderer/Renderer.h"
 #include <fstream>
+#include "AnimatorComponent.hpp"
+#include "Game.hpp"
+#include "Json.hpp"
+#include "Renderer/Renderer.hpp"
 
 AnimatorComponent::AnimatorComponent(class Renderer* renderer, const std::string &texPath, const std::string &dataPath,
                                      int width, int height, int drawOrder)

@@ -1,6 +1,6 @@
 #pragma once
-#include "Actor.h"
-#include "MapTile.h"
+#include "Actor.hpp"
+#include "MapTile.hpp"
 
 enum SettlementType {
     Rural,
