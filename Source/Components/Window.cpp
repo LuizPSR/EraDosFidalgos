@@ -26,8 +26,8 @@ bool Window::Initialize()
         return false;
     }
 
-    SDL_SetWindowMouseGrab(sdlWindow, true);
     SDL_SetWindowMinimumSize(sdlWindow, 400, 300);
+    SDL_SetWindowSize(sdlWindow, 1280, 720);
 
     return true;
 }

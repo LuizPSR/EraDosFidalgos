@@ -47,6 +47,12 @@ bool Renderer::Initialize(const Window &window)
     }
     SDL_GL_MakeCurrent(window.sdlWindow, mContext);
 
+    // Turn off vsync
+    if (SDL_GL_SetSwapInterval(0) == false)
+    {
+        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Warning: Unable to disable VSync: %s", SDL_GetError());
+    }
+
     GLenum glewError = glewInit();
     if (glewError != GLEW_OK)
     {

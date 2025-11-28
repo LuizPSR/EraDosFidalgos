@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 # Configurando o padrão c++
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # Configurando o nome e executável do projeto
 set(PROJECT_NAME "EraDosFidalgos")
@@ -41,9 +41,7 @@ add_executable(${PROJECT_NAME}
         Source/Components/RectComponent.cpp
         Source/Components/RectComponent.h
         Source/Entities/Settlement.h
-        Source/Entities/Character.h
         Source/Entities/Army.h
-        Source/Entities/Event.h
         Source/Components/Camera.cpp
         Source/Components/Camera.h
         Source/Systems/ChessBoard.cpp
