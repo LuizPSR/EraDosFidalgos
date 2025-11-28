@@ -16,11 +16,12 @@ find_package(Flecs REQUIRED CONFIG)
 find_package(GLM REQUIRED CONFIG)
 find_package(ImGui REQUIRED CONFIG)
 find_package(TOML REQUIRED CONFIG)
+find_package(ALSA QUIET)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-file(GLOB_RECURSE HEADERS "Source/*.hpp")
-file(GLOB_RECURSE SOURCES "Source/*.cpp")
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "Source/*.hpp")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "Source/*.cpp")
 add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -33,6 +34,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         tomlplusplus::tomlplusplus
         glm::glm
         m) # Math
+if (ALSA_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ALSA::ALSA)
+endif ()
 
 set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 target_include_directories(${PROJECT_NAME} PUBLIC ${SOURCE_DIR})

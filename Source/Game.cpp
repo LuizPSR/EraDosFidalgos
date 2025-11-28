@@ -12,6 +12,7 @@
 #include "Systems/ChessBoard.hpp"
 #include "Systems/Events.hpp"
 #include "Systems/Characters.hpp"
+#include "Systems/Sound.hpp"
 
 struct MainMenuModule
 {
@@ -298,6 +299,8 @@ void RegisterSystems(flecs::world &ecs)
     void(ecs.import<PauseMenuModule>().disable());
 
     void(ecs.import<TestUIModule>().disable());
+
+    void(ecs.import<SoundModule>().disable());
 
     // Initialize CheckerBoard systems
     void(ecs.import<ChessBoardScene>()
