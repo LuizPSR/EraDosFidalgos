@@ -1,0 +1,110 @@
+[dynasties]
+names = [
+    "Valerius",
+    "Ironwood",
+    "Emberfall",
+    "Drakonheart",
+    "Silverlight",
+    "Rivenrock",
+    "Goldhart",
+    "Blackthorn",
+    "Aerion",
+    "Boreal",
+    "Stonehelm",
+    "Frostglade",
+    "Ashford",
+    "Redclaw",
+    "Shadowfen",
+    "Wyverncrest",
+    "Deepriver",
+    "Aurelian",
+    "Glimmerwick",
+    "Stormgarde",
+]
+
+[provinces]
+names = [
+    "Aethelgard",
+    "Stonehaven",
+    "Sovereign",
+    "Riverbend",
+    "Highcross",
+    "Sunstone",
+    "Mistwood",
+    "Barrier",
+    "Ebonmere",
+    "Azure",
+    "Delta",
+    "Sunder",
+    "Weald",
+    "Oldheart",
+    "Crimson",
+    "Vylaria",
+    "Khardos",
+    "Greymoor",
+    "Falador",
+    "Silvermere",
+]
+
+[characters.male]
+names = [
+    "Alaric",
+    "Borin",
+    "Kaelen",
+    "Garrick",
+    "Torvin",
+    "Elias",
+    "Faelan",
+    "Magnus",
+    "Joric",
+    "Orion",
+    "Rylan",
+    "Brennus",
+    "Thane",
+    "Lothar",
+    "Valen",
+    "Corbin",
+    "Darian",
+    "Silas",
+    "Zenith",
+    "Hadrian",
+]
+
+[characters.female]
+names = [
+    "Elara",
+    "Lyra",
+    "Seraphina",
+    "Anya",
+    "Isolde",
+    "Brienne",
+    "Rowan",
+    "Maelis",
+    "Vivienne",
+    "Lysandra",
+    "Sylvie",
+    "Artemis",
+    "Freya",
+    "Ygritte",
+    "Lilliana",
+    "Caelia",
+    "Rhiannon",
+    "Jocelyn",
+    "Zara",
+    "Aeliana",
+]
+
+[terrain_types.modifiers]
+wetlands = "Wetlands"
+plains = "Plains"
+hills = "Hills"
+mountains = "Mountains"
+water = "Water"
+
+[biome_types.modifiers]
+drylands = "Drylands"
+grasslands = "Grasslands"
+forest = "Forest"
+jungle = "Jungle"
+wasteland = "Wasteland"
+

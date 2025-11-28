@@ -51,17 +51,20 @@ struct Dynasty
     std::string name;
 };
 
-// Character to Title
-struct RulerOf {};
+// Character to Title / Symmetric
+struct Ruler {};
 
-// Character to Title
-struct CourtierOf {};
+// Character to Title / Symmetric
+struct Courtier {};
 
-// Character to Character
+// Character to Character / Symmetric
 struct MarriedTo {};
 
-// Character to Dynasty
+// Character to Dynasty / Symmetric
 struct DynastyMember {};
+
+// Dynasty to Character / Symmetric
+struct DynastyHead {};
 
 // Province to Title or Title to Title
 struct InRealm {};

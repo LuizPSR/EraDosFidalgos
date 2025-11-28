@@ -1,5 +1,8 @@
 #include <cmath>
 #include <imgui.h>
+#include <toml++/toml.hpp>
+#include <SDL3/SDL_filesystem.h>
+#include <filesystem>
 
 #include "Events.h"
 
@@ -92,15 +95,27 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 
 // TODO: Reorganize this
 
-// --- Helper Function to Create Character & Family ---
 
-// This simplifies the creation of a character and their immediate family/dynasty.
-flecs::entity create_character_and_family(
-    const flecs::world& ecs,
-    const flecs::entity& rulerPrefab,
-    const std::string& char_name,
-    const flecs::entity& dynasty_entity,
-    const flecs::entity& spouse_entity = flecs::entity::null())
+struct CharacterBuilder
+{
+    const flecs::world& ecs;
+    flecs::entity rulerPrefab;
+    toml::array *dynastyNames;
+    toml::array *provinceNames;
+    toml::array *maleNames;
+    toml::array *femaleNames;
+
+    flecs::entity CreateDynastyWithKingdomAndFamily(size_t index) const;
+    flecs::entity CreateCharacterAndFamily(
+        const std::string& char_name,
+        const flecs::entity& dynasty_entity,
+        const flecs::entity& spouse_entity = flecs::entity::null()) const;
+};
+
+flecs::entity CharacterBuilder::CreateCharacterAndFamily(
+        const std::string& char_name,
+        const flecs::entity& dynasty_entity,
+        const flecs::entity& spouse_entity) const
 {
     flecs::entity character = ecs.entity()
         .is_a(rulerPrefab)
@@ -115,6 +130,38 @@ flecs::entity create_character_and_family(
     return character;
 }
 
+flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t index) const
+{
+    auto dName = dynastyNames->get_as<std::string>(index);
+    auto dynasty = ecs.entity().set<Dynasty>({ dName->get() });
+
+    auto kingdom = ecs.entity().set<Title>({ dName->get() + " Kingdom" });
+
+    auto pName = provinceNames->get_as<std::string>(index);
+    auto capital = ecs.entity()
+        .set<Province>({ dName->get() + " " + pName->get() })
+        .add<InRealm>(kingdom);
+
+    for (size_t i = 0; i < 9; i += 1)
+    {
+        auto pName = provinceNames->get_as<std::string>(index + i);
+        void(ecs.entity()
+            .set<Province>({ dName->get() + " " + pName->get() })
+            .add<InRealm>(kingdom));
+    }
+
+    auto rulerName = maleNames->get_as<std::string>(index);
+    auto ruler = CreateCharacterAndFamily(rulerName->get(), dynasty)
+        .add<Ruler>(kingdom)
+        .add<DynastyHead>(dynasty);
+    auto spouseName = femaleNames->get_as<std::string>(index);
+    auto spouse = CreateCharacterAndFamily(spouseName->get(), dynasty)
+        .add<MarriedTo>(ruler)
+        .add<DynastyMember>(dynasty);
+
+    return dynasty;
+}
+
 // --- CharactersModule Implementation ---
 
 CharactersModule::CharactersModule(const flecs::world& ecs)
@@ -127,10 +174,13 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         .add(flecs::With, ecs.component<ShowDetails>()));
 
     // Relationship Tags
-    void(ecs.component<RulerOf>().add(flecs::Acyclic)); // Rulers don't rule themselves
-    void(ecs.component<CourtierOf>());
-    void(ecs.component<MarriedTo>().add(flecs::Symmetric)); // Marriage is reciprocal
-    void(ecs.component<DynastyMember>());
+    void(ecs.component<Ruler>().add(flecs::Acyclic).add(flecs::Symmetric));
+    void(ecs.component<Courtier>().add(flecs::Symmetric));
+    void(ecs.component<MarriedTo>().add(flecs::Symmetric));
+    void(ecs.component<DynastyMember>().add(flecs::Symmetric));
+    void(ecs.component<DynastyHead>()
+        .add(flecs::With, ecs.component<DynastyMember>())
+        .add(flecs::Symmetric));
     void(ecs.component<InRealm>().add(flecs::Transitive)); // Used for hierarchy
 
     // Prefabs
@@ -138,73 +188,19 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         .add<Character>();
     void(rulerPrefab.disable<ShowDetails>());
 
-    // --- Dynasties ---
-    flecs::entity d_stark = ecs.entity("Dynasty_Stark").set<Dynasty>({"Stark"});
-    flecs::entity d_lannister = ecs.entity("Dynasty_Lannister").set<Dynasty>({"Lannister"});
-    flecs::entity d_baratheon = ecs.entity("Dynasty_Baratheon").set<Dynasty>({"Baratheon"});
+    const auto path = std::filesystem::path(SDL_GetBasePath()) / "Assets" / "Names.toml";
+    toml::table tbl = toml::parse_file(path.string());
 
-    // --- Kingdoms (Top-level Titles) ---
-    flecs::entity k_north = ecs.entity("Kingdom_of_the_North").set<Title>({"The North"});
-    flecs::entity k_westerlands = ecs.entity("Kingdom_of_the_Westerlands").set<Title>({"The Westerlands"});
-    flecs::entity k_stormlands = ecs.entity("Kingdom_of_the_Stormlands").set<Title>({"The Stormlands"});
-
-    // --- CHARACTERS AND THEIR HOLDINGS ---
-
-    // =========================================================================
-    // KINGDOM OF THE NORTH (Stark)
-    // =========================================================================
-
-    // ** KING/RULER **
-    flecs::entity c_ned_spouse = create_character_and_family(ecs, rulerPrefab, "Catelyn Tully", d_stark);
-    flecs::entity c_ned = create_character_and_family(ecs, rulerPrefab, "Eddard Stark", d_stark, c_ned_spouse);
-    void(c_ned.add<RulerOf>(k_north));
-
-    // ** VASSALS (Dukes/Counts/Lords) **
-
-    // 1. Lord of White Harbor (House Manderly)
-    flecs::entity t_white_harbor = ecs.entity("Title_White_Harbor").set<Title>({"White Harbor"});
-    void(t_white_harbor.add<InRealm>(k_north)); // Vassal Title belongs to Kingdom Title
-    flecs::entity c_wyllis = create_character_and_family(ecs, rulerPrefab, "Wyllis Manderly", d_stark);
-    void(c_wyllis.add<RulerOf>(t_white_harbor));
-
-    // Provinces for White Harbor
-    void(ecs.entity().set<Province>({"Harbor Farms", 100.0f}).add<InRealm>(t_white_harbor));
-    void(ecs.entity().set<Province>({"The Port", 350.5f}).add<InRealm>(t_white_harbor));
-    void(ecs.entity().set<Province>({"Swamp Lands", 50.0f}).add<InRealm>(t_white_harbor));
-
-    // 2. Lord of Winterfell (House Bolton - *placeholder for sample*)
-    flecs::entity t_winterfell = ecs.entity("Title_Winterfell").set<Title>({"Winterfell"});
-    void(t_winterfell.add<InRealm>(k_north));
-    flecs::entity c_roose = create_character_and_family(ecs, rulerPrefab, "Roose Bolton", d_stark); // Using Stark as a placeholder dynasty
-    void(c_roose.add<RulerOf>(t_winterfell));
-
-    // Provinces for Winterfell
-    void(ecs.entity().set<Province>({"North Forest", 80.0f}).add<InRealm>(t_winterfell));
-    void(ecs.entity().set<Province>({"Iron Mines", 220.0f}).add<InRealm>(t_winterfell));
-    void(ecs.entity().set<Province>({"River Lands", 130.0f}).add<InRealm>(t_winterfell));
-
-    // 3. Lord of Karhold (House Karstark)
-    flecs::entity t_karhold = ecs.entity("Title_Karhold").set<Title>({"Karhold"});
-    void(t_karhold.add<InRealm>(k_north));
-    flecs::entity c_rickard = create_character_and_family(ecs, rulerPrefab, "Rickard Karstark", d_stark);
-    void(c_rickard.add<RulerOf>(t_karhold));
-
-    // Provinces for Karhold
-    void(ecs.entity().set<Province>({"Mountain Pass", 60.0f}).add<InRealm>(t_karhold));
-    void(ecs.entity().set<Province>({"East Coast", 190.0f}).add<InRealm>(t_karhold));
-    void(ecs.entity().set<Province>({"Fjord Fishery", 110.0f}).add<InRealm>(t_karhold));
-
-    // =========================================================================
-    // KINGDOM OF THE WESTERLANDS (Lannister)
-    // =========================================================================
-
-    // ** KING/RULER **
-    flecs::entity c_tywin_spouse = create_character_and_family(ecs, rulerPrefab, "Joanna Lannister", d_lannister);
-    flecs::entity c_tywin = create_character_and_family(ecs, rulerPrefab, "Tywin Lannister", d_lannister, c_tywin_spouse);
-    void(c_tywin.add<RulerOf>(k_westerlands));
-
-    // ... (Add 3 vassals, 9 provinces, and families for Westerlands and Stormlands similarly) ...
-    // Note: Due to space, the remaining samples are abbreviated, but follow the same pattern.
+    auto builder = CharacterBuilder {
+        .ecs = ecs,
+        .rulerPrefab = rulerPrefab,
+        .dynastyNames = tbl["dynasties"]["names"].as_array(),
+        .provinceNames = tbl["provinces"]["names"].as_array(),
+        .maleNames = tbl["characters"]["male"]["names"].as_array(),
+        .femaleNames = tbl["characters"]["female"]["names"].as_array(),
+    };
+    for (size_t i = 0; i < 3; i += 1)
+        void(builder.CreateDynastyWithKingdomAndFamily(i));
 
     // 3. Initialize Cached Queries
 
@@ -212,7 +208,7 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
 
     // Query to find all characters who are a Ruler of any Title
     flecs::query<const Character> qRulers = ecs.query_builder<const Character>()
-        .with<RulerOf>(flecs::Wildcard)
+        .with<Ruler>(flecs::Wildcard)
         .build();
 
     // Query to find all Characters who are members of a specific Dynasty
@@ -253,7 +249,7 @@ void RenderCharacterOverviewWindow(
                 // Get the primary Title this character rules over
                 // We reuse q_ruled_titles, scoped to the current ruler entity.
                 std::string title_name = "No Title";
-                auto title = ruler.target_for<Title>(ecs.component<RulerOf>());
+                auto title = ruler.target_for<Title>(ecs.component<Ruler>());
                 if (title.is_valid())
                     title_name = title.get<Title>().name;
 
@@ -311,7 +307,7 @@ void RenderCharacterDetailWindow(
 
         // --- TITLES & PROVINCES (Hierarchy Traversal) ---
         // Reuse q_ruled_titles to find the direct holdings
-        if (auto title_entity = character.target_for<Title>(ecs.component<RulerOf>()))
+        if (auto title_entity = character.target_for<Title>(ecs.component<Ruler>()))
         {
             if (const auto* t = title_entity.try_get<Title>();
                 ImGui::TreeNodeEx(t->name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
