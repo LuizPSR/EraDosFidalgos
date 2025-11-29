@@ -9,8 +9,12 @@ void ImportModules(flecs::world &ecs);
 
 struct GameTimers
 {
+    explicit GameTimers(const flecs::world &ecs);
+
     // Disabled on pause
     flecs::timer mTickTimer;
+    // Run every day (MUST get amount of days elapsed from GameTime struct)
+    flecs::timer mDayTimer;
 };
 
 struct InputState

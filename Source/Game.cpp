@@ -170,10 +170,9 @@ bool Initialize(flecs::world &ecs)
         .add(flecs::Singleton)
         .add<InputState>());
 
-    const auto &tickTimer = ecs.timer("TickTimer");
     void(ecs.component<GameTimers>()
         .add(flecs::Singleton)
-        .set<GameTimers>({ tickTimer }));
+        .emplace<GameTimers>(ecs));
 
     // Creates ImGUI ini file path
     // Has to have a static lifetime
@@ -252,15 +251,22 @@ void ImportModules(flecs::world& ecs)
 
     void(ecs.import<SoundModule>().disable());
 
+    void(ecs.import<CharactersModule>()
+        .child_of<TestUIModule>());
+
     void(ecs.import<ChessBoardScene>()
         .child_of<TestUIModule>()
         .disable());
 
     void(ecs.import<EventsSampleScene>()
         .child_of<TestUIModule>());
+}
 
-    void(ecs.import<CharactersModule>()
-        .child_of<TestUIModule>());
+GameTimers::GameTimers(const flecs::world& ecs)
+{
+    mTickTimer = ecs.timer("TickTimer");
+    mDayTimer = ecs.timer("DayTimer");
+    mDayTimer.stop();
 }
 
 void ProcessInput(const flecs::world &ecs)

@@ -9,8 +9,9 @@ struct Title
 
 struct Character
 {
-    std::string name;
-    uint64_t money;
+    std::string mName;
+    uint64_t mMoney = 0.0f;
+    uint64_t mAgeDays = 0;
 };
 
 struct Dynasty
@@ -34,9 +35,17 @@ struct DynastyMember {};
 // Dynasty to Character / Symmetric
 struct DynastyHead {};
 
+
 // -- TAG --
 // Whether to show character details
 struct ShowCharacterDetails {};
+
+struct Male {};
+
+struct Female {};
+
+
+// -- Module --
 
 struct CharactersModule
 {

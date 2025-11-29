@@ -12,32 +12,37 @@
 struct CharacterBuilder
 {
     const flecs::world& ecs;
-    flecs::entity rulerPrefab;
     toml::array *dynastyNames;
     toml::array *provinceNames;
     toml::array *maleNames;
     toml::array *femaleNames;
 
     flecs::entity CreateDynastyWithKingdomAndFamily(size_t index) const;
-    flecs::entity CreateCharacterAndFamily(
+    flecs::entity CreateCharacter(
         const std::string& char_name,
         const flecs::entity& dynasty_entity,
-        const flecs::entity& spouse_entity = flecs::entity::null()) const;
+        bool isMale) const;
 };
 
-flecs::entity CharacterBuilder::CreateCharacterAndFamily(
-        const std::string& char_name,
-        const flecs::entity& dynasty_entity,
-        const flecs::entity& spouse_entity) const
+flecs::entity CharacterBuilder::CreateCharacter(
+    const std::string& char_name,
+    const flecs::entity& dynasty_entity,
+    bool isMale) const
 {
     flecs::entity character = ecs.entity()
-        .is_a(rulerPrefab)
-        .set<Character>({char_name})
+        .set<Character>({
+            .mName = char_name,
+            .mMoney = 123,
+            .mAgeDays = 20 * 360,
+        })
         .add<DynastyMember>(dynasty_entity);
-
-    if (spouse_entity.is_valid())
+    void(character.disable<ShowCharacterDetails>());
+    if (isMale)
     {
-        void(character.add<MarriedTo>(spouse_entity));
+        void(character.add<Male>());
+    } else
+    {
+        void(character.add<Female>());
     }
 
     return character;
@@ -64,11 +69,11 @@ flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t i
     }
 
     auto rulerName = maleNames->get_as<std::string>(index);
-    auto ruler = CreateCharacterAndFamily(rulerName->get(), dynasty)
+    auto ruler = CreateCharacter(rulerName->get(), dynasty, true)
         .add<Ruler>(kingdom)
         .add<DynastyHead>(dynasty);
     auto spouseName = femaleNames->get_as<std::string>(index);
-    auto spouse = CreateCharacterAndFamily(spouseName->get(), dynasty)
+    auto spouse = CreateCharacter(spouseName->get(), dynasty, false)
         .add<MarriedTo>(ruler)
         .add<DynastyMember>(dynasty);
 
@@ -98,17 +103,11 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         .add(flecs::Symmetric));
     void(ecs.component<InRealm>().add(flecs::Transitive)); // Used for hierarchy
 
-    // Prefabs
-    flecs::entity rulerPrefab = ecs.prefab()
-        .add<Character>();
-    void(rulerPrefab.disable<ShowCharacterDetails>());
-
     const auto path = std::filesystem::path(SDL_GetBasePath()) / "Assets" / "Names.toml";
     toml::table tbl = toml::parse_file(path.string());
 
     auto builder = CharacterBuilder {
         .ecs = ecs,
-        .rulerPrefab = rulerPrefab,
         .dynastyNames = tbl["dynasties"]["names"].as_array(),
         .provinceNames = tbl["provinces"]["names"].as_array(),
         .maleNames = tbl["characters"]["male"]["names"].as_array(),
@@ -170,7 +169,7 @@ void RenderCharacterOverviewWindow(
                     title_name = title.get<Title>().name;
 
                 ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text("%s", c.name.c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%s", c.mName.c_str());
                 ImGui::TableNextColumn(); ImGui::Text("%s", title_name.c_str());
 
                 bool showDetails = ruler.enabled<ShowCharacterDetails>();
@@ -200,7 +199,7 @@ void RenderCharacterDetailWindow(
     const flecs::query<>& qInRealm,
     const Character& c)
 {
-    const std::string window_name = c.name + " - Details";
+    const std::string window_name = c.mName + " - Details";
     bool open = character.enabled<ShowCharacterDetails>();
 
     if (ImGui::Begin(window_name.c_str(), &open))
@@ -215,7 +214,7 @@ void RenderCharacterDetailWindow(
         if (spouse_target.is_valid())
         {
             auto* spouse = spouse_target.try_get<Character>();
-            ImGui::Text("Married To: %s", spouse ? spouse->name.c_str() : "Single");
+            ImGui::Text("Married To: %s", spouse ? spouse->mName.c_str() : "Single");
         }
 
         // ImGui::Separator();

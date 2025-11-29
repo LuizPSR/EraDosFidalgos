@@ -6,7 +6,8 @@
 
 ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
 {
-    const flecs::entity tickTimer = ecs.get<GameTimers>().mTickTimer;
+    const auto &timers = ecs.get<GameTimers>();
+    const flecs::entity tickTimer = timers.mTickTimer;
 
     void(ecs.system<Camera, const InputState, const Window>("UpdateCamera")
         .tick_source(tickTimer)
