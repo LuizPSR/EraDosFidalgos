@@ -7,7 +7,8 @@ struct InRealm {};
 struct Province
 {
     std::string name;
-    uint64_t income;
+    // TODO: initialize province incomes based on something
+    uint64_t income = 123;
 
     // Transforms income from fixed point to floating point (USE FOR DISPLAY ONLY)
     [[nodiscard]] double IncomeFloat() const

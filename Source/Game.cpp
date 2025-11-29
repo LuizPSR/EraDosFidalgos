@@ -53,9 +53,11 @@ MainMenuModule::MainMenuModule(flecs::world& ecs)
             const auto &ecs = it.world();
 
             const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            const ImVec2 size = ImGui::GetMainViewport()->Size;
             ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+            ImGui::SetNextWindowSizeConstraints(ImVec2{size.x * 0.6f, size.y * 0.2f}, ImVec2{FLT_MAX, FLT_MAX});
             if (ImGui::Begin("Era dos Fidalgos", nullptr,
-                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground))
+                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground))
             {
                 if (HorizontalButton("Start"))
                 {
@@ -78,8 +80,10 @@ PauseMenuModule::PauseMenuModule(flecs::world& ecs)
            const auto &ecs = it.world();
 
            const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+           const ImVec2 size = ImGui::GetMainViewport()->Size;
            ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-           if (ImGui::Begin("Paused", nullptr, ImGuiWindowFlags_NoMove))
+           ImGui::SetNextWindowSizeConstraints(ImVec2{size.x * 0.6f, size.y * 0.2f}, ImVec2{FLT_MAX, FLT_MAX});
+           if (ImGui::Begin("Paused", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize))
            {
                if (HorizontalButton("Resume") || input.WasEscapePressed)
                {
@@ -141,6 +145,11 @@ TestUIModule::TestUIModule(flecs::world& ecs)
                 static bool showDemo = false;
                 ImGui::Checkbox("Show ImGUI Demo", &showDemo);
                 if (showDemo) ImGui::ShowDemoWindow();
+
+                if (ImGui::Button("Create Kingdoms"))
+                {
+                    CreateKingdoms(ecs, 3);
+                }
             }
             ImGui::End();
         });

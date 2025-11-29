@@ -8,44 +8,140 @@
 // TODO: remove this
 #include <SDL3/SDL.h>
 
-EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
-{
-    const auto &timers = ecs.get<GameTimers>();
-    const flecs::entity tickTimer = timers.mTickTimer;
+#include "Components/Province.hpp"
 
+void CenterNextImGuiWindow()
+{
+    const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2{0.5f, 0.5f});
+}
+
+void DoCharacterBirthSystems(const flecs::world& ecs, const flecs::timer &tickTimer)
+{
+    // Starts pregnancy events for married couples
+    ecs.observer<const Character, const GameTime>()
+        .with(ecs.component<MarriedTo>(), flecs::Wildcard)
+        .with(ecs.component<Female>())
+        .event(flecs::Monitor)
+        .each([](flecs::iter &it, size_t i, const Character &c, const GameTime &gameTime)
+        {
+            flecs::entity characterEntity = it.entity(i);
+            const auto &ecs = it.world();
+            if (it.event() == flecs::OnAdd)
+            {
+                flecs::entity spouseEntity = characterEntity.target(ecs.component<MarriedTo>());
+                void(characterEntity.child()
+                    .add<FiredEvent>()
+                    .set<PregnancySaga>({
+                        .father = spouseEntity,
+                        .mother = characterEntity,
+                    }));
+            } else if (it.event() == flecs::OnRemove)
+            {
+                characterEntity.children([](flecs::entity child)
+                {
+                    if (child.has<PregnancySaga>()) return child.destruct();
+                });
+            }
+        });
+
+    ecs.system<PregnancySaga, const GameTime>()
+        .with<FiredEvent>()
+        .tick_source(tickTimer)
+        .each([](flecs::iter &it, size_t i, PregnancySaga &saga, const GameTime &gameTime)
+        {
+            const auto &entity = it.entity(i);
+            auto *father = saga.father.try_get<Character>();
+            auto *mother = saga.mother.try_get<Character>();
+            if (father == nullptr || mother == nullptr) return entity.destruct();
+
+            switch (saga.stage)
+            {
+            case PregnancySaga::Attempt:
+                {
+                    // TODO: make so it can fail
+                    saga.stage = PregnancySaga::Announce;
+                    void(entity.remove<PausesGame>()
+                        .remove<FiredEvent>()
+                        // TODO: add randomness here
+                        .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30)));
+                }
+                break;
+            case PregnancySaga::Announce:
+                {
+                    void(entity.add<PausesGame>());
+                    auto name = "Evento - Gravidez##" + std::to_string(entity.id());
+                    CenterNextImGuiWindow();
+                    if (ImGui::Begin(name.data()))
+                    {
+                        ImGui::Text("%s e %s vão ter uma criança.", father->mName.data(), mother->mName.data());
+                        if (ImGui::Button("Close"))
+                        {
+                            saga.stage = PregnancySaga::Birth;
+                            void(entity.remove<PausesGame>()
+                                .remove<FiredEvent>()
+                                // TODO: add randomness here
+                                .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30 * 8)));
+                        }
+                    }
+                    ImGui::End();
+                    break;
+                }
+            case PregnancySaga::Birth:
+                {
+                    void(entity.add<PausesGame>());
+                    auto name = "Evento - Gravidez##" + std::to_string(entity.id());
+                    CenterNextImGuiWindow();
+                    if (ImGui::Begin(name.data()))
+                    {
+                       ImGui::Text("O filho de %s e %s nasceu.", father->mName.data(), mother->mName.data());
+                       if (ImGui::Button("Close"))
+                       {
+                           // TODO: spawn child here
+                           void(entity.destruct());
+                       }
+                    }
+                    ImGui::End();
+                    break;
+                }
+            }
+        });
+}
+
+void DoAdultMarriageSystems(const flecs::world& ecs, flecs::timer)
+{
+    // Adds marriage planning to unmarried adults
+    ecs.observer<const Character, const GameTime>()
+        .with<Adult>()
+        .without(ecs.component<MarriedTo>(), flecs::Wildcard)
+        .event(flecs::Monitor)
+        .each([](flecs::iter &it, size_t i, const Character &c,  const GameTime &gameTime)
+        {
+            flecs::entity characterEntity = it.entity(i);
+            if (it.event() == flecs::OnRemove)
+            {
+                characterEntity.children([](flecs::entity child)
+                {
+                    if (child.has<PlanMarriageSaga>()) return child.destruct();
+                });
+            } else if (it.event() == flecs::OnAdd)
+            {
+                void(characterEntity.child()
+                    .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30))
+                    .set<PlanMarriageSaga>({ characterEntity }));
+            }
+        });
+
+    // TODO: implement the behavior
+}
+
+void DoEventSchedulingSystems(const flecs::world& ecs, flecs::timer tickTimer)
+{
     void(ecs.component<FiredEvent>()
         .add(flecs::Trait)
         .add(flecs::CanToggle));
 
-    void(ecs.component<GameTime>()
-        .add(flecs::Singleton)
-        .emplace<GameTime>(GameTime{}));
-
-    ecs.system<GameTime, GameTimers>()
-        .write<flecs::Timer>()
-        .kind(flecs::PreUpdate)
-        .tick_source(tickTimer)
-        .each([](const flecs::iter &it, size_t, GameTime &gameTime, GameTimers &timers)
-        {
-            if (it.world().count<PausesGame>() > 0) return;
-
-            float speedChange = it.delta_time() * gameTime.mSpeedAccel;
-            if (gameTime.mSpeed < -speedChange)
-                gameTime.mSpeed = 0;
-            else
-                gameTime.mSpeed += speedChange;
-            gameTime.mSpeedAccel *= powf(0.1, it.delta_time());
-
-            gameTime.mLastTimeSecs = gameTime.mTimeSecs;
-            gameTime.mTimeSecs += uint64_t(it.delta_time() * gameTime.mSpeed * 86400.0);
-            if (gameTime.CountDayChanges() != 0)
-            {
-                // Immediately tick the systems which use DayTimer
-                auto &tickSource = timers.mDayTimer.get_mut<EcsTickSource>();
-                tickSource.tick = true;
-            }
-        });
-
+    // Adds a fired tag to events which are scheduled to the past
     ecs.system<const EventSchedule, const GameTime>()
         .kind(flecs::PreUpdate)
         .tick_source(tickTimer)
@@ -69,30 +165,40 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
                 }
             }
         });
+}
 
-    ecs.system<const SamplePopup, const FiredEvent>()
-        .kind(flecs::OnUpdate)
+void DoGameTimeSystems(const flecs::world& ecs, flecs::timer tickTimer)
+{
+    void(ecs.component<GameTime>()
+        .add(flecs::Singleton));
+
+    // Advances the game time by the set speed
+    ecs.system<GameTime, const GameTimers>()
+        .write<flecs::TickSource>()
+        .kind(flecs::PreUpdate)
         .tick_source(tickTimer)
-        .each([](const flecs::entity &e, const SamplePopup& p, const FiredEvent&)
+        .each([](const flecs::iter &it, size_t, GameTime &gameTime, const GameTimers &timers)
         {
-            void(e.add<PausesGame>());
+            if (it.world().count<PausesGame>() > 0) return;
 
-            auto name = "Popup##" + std::to_string(e.id());
+            float speedChange = it.delta_time() * gameTime.mSpeedAccel;
+            if (gameTime.mSpeed < -speedChange)
+                gameTime.mSpeed = 0;
+            else
+                gameTime.mSpeed += speedChange;
+            gameTime.mSpeedAccel *= powf(0.1, it.delta_time());
 
-            const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2{0.5f, 0.5f});
-            if (ImGui::Begin(name.c_str(), nullptr, ImGuiWindowFlags_NoDocking))
+            gameTime.mLastTimeSecs = gameTime.mTimeSecs;
+            gameTime.mTimeSecs += uint64_t(it.delta_time() * gameTime.mSpeed * 86400.0);
+            if (gameTime.CountDayChanges() != 0)
             {
-                ImGui::Text("ID %zu", e.id());
-                ImGui::Text("%s", p.mMessage.c_str());
-                if (ImGui::Button("Close me"))
-                {
-                    e.destruct();
-                }
+                // Immediately tick the systems which use DayTimer
+                auto &tickSource = timers.mDayTimer.get_mut<EcsTickSource>();
+                tickSource.tick = true;
             }
-            ImGui::End();
         });
 
+    // Controls for game speed
     ecs.system<GameTime>()
         .kind(flecs::OnUpdate)
         .tick_source(tickTimer)
@@ -106,38 +212,89 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
             }
             ImGui::End();
         });
+}
 
-    ecs.observer<Character, const GameTime>()
-        .event(flecs::OnAdd)
-        .each([](flecs::iter &it, size_t i, const Character &c,  const GameTime& gameTime)
+void DoSamplePopupSystem(const flecs::world& ecs, flecs::timer tickTimer)
+{
+    // Sample Popup for testing event schedules
+    ecs.system<const SamplePopup, const FiredEvent>()
+        .kind(flecs::OnUpdate)
+        .tick_source(tickTimer)
+        .each([](const flecs::entity &e, const SamplePopup& p, const FiredEvent&)
         {
-            SDL_Log("Observer fired");
-            flecs::entity characterEntity = it.entity(i);
-            const auto &ecs = it.world();
-            if (!characterEntity.has_relation(ecs.component<MarriedTo>()))
-            {
-                SDL_Log("Planning marriage for %s", c.mName.c_str());
-                ecs.entity()
-                    .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30))
-                    .set<PlanMarriage>({ characterEntity });
-            }
-        });
+            void(e.add<PausesGame>());
 
-    // TOOD: finish this
-    ecs.system<PregnancySaga, const GameTime>()
-        .with<FiredEvent>()
-        .each([](flecs::iter &it, size_t i, PregnancySaga &saga, const GameTime &gameTime)
-        {
-            switch (saga.stage)
+            auto name = "Popup##" + std::to_string(e.id());
+
+            CenterNextImGuiWindow();
+            if (ImGui::Begin(name.c_str(), nullptr, ImGuiWindowFlags_NoDocking))
             {
-            case PregnancySaga::Stage::Attempt:
-                break;
-            case PregnancySaga::Stage::Announce:
-                break;
-            case PregnancySaga::Stage::Birth:
-                break;
+                ImGui::Text("ID %zu", e.id());
+                ImGui::Text("%s", p.mMessage.c_str());
+                if (ImGui::Button("Close me"))
+                {
+                    e.destruct();
+                }
             }
+            ImGui::End();
         });
+}
+
+void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTimers &timers)
+{
+    ecs.system<Province, const GameTime>()
+        .tick_source(timers.mDayTimer)
+        .each([](flecs::iter &it, size_t i, Province &province, const GameTime &gameTime)
+        {
+            size_t days = gameTime.CountDayChanges();
+            // TODO: see if there is a cleaner way to reference the ruler
+            flecs::entity entity = it.entity(i);
+            flecs::entity title = entity.target<InRealm>();
+            flecs::entity ruler = title.target<Ruler>();
+
+            auto &character = ruler.get_mut<Character>();
+            character.mMoney += province.income * days;
+
+            // TODO: pay taxes to higher lieges
+        });
+}
+
+void DoCharacterAgingSystem(const flecs::world& ecs, const GameTimers& timers)
+{
+    ecs.system<Character, const GameTime>()
+        .tick_source(timers.mDayTimer)
+        .each([](flecs::entity e, Character &character, const GameTime &gameTime)
+        {
+            character.mAgeDays += gameTime.CountDayChanges();
+            if (!e.has<Adult>() && character.mAgeDays > 16 * 360)
+                void(e.add<Adult>());
+        });
+}
+
+EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
+{
+    const auto &timers = ecs.get<GameTimers>();
+
+    DoGameTimeSystems(ecs, timers.mTickTimer);
+
+    DoEventSchedulingSystems(ecs, timers.mTickTimer);
+
+    DoAdultMarriageSystems(ecs, timers.mTickTimer);
+
+    DoCharacterBirthSystems(ecs, timers.mTickTimer);
+
+    DoSamplePopupSystem(ecs, timers.mTickTimer);
+
+    DoProvinceRevenueSystems(ecs, timers);
+
+    DoCharacterAgingSystem(ecs, timers);
+
+    EventsSampleScene::InitializeEntities(ecs);
+}
+
+void EventsSampleScene::InitializeEntities(const flecs::world& ecs)
+{
+    void(ecs.component<GameTime>().set<GameTime>({}));
 
     void(ecs.entity()
         .emplace<SamplePopup>(SamplePopup{ "Bem vindo ao Era dos Fidalgos!" })

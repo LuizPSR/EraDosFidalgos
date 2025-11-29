@@ -2,9 +2,15 @@
 #include <flecs.h>
 #include <string>
 
+#include "Random.hpp"
+
+// TODO: initialize this entity in game
+struct EventsRng: Random {};
+
 struct EventsSampleScene
 {
     explicit EventsSampleScene(const flecs::world &ecs);
+    static void InitializeEntities(const flecs::world &ecs);
 };
 
 struct GameTime
@@ -58,18 +64,18 @@ struct SamplePopup
     std::string mMessage;
 };
 
-struct PlanMarriage
+struct PlanMarriageSaga
 {
     flecs::entity character;
 };
 
 struct PregnancySaga
 {
-    enum class Stage
+    enum Stage
     {
         Attempt,
         Announce,
         Birth,
-    } stage;
+    } stage = Attempt;
     flecs::entity father, mother;
 };

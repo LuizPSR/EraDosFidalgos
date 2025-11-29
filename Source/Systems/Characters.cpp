@@ -76,6 +76,7 @@ flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t i
     auto spouse = CreateCharacter(spouseName->get(), dynasty, false)
         .add<MarriedTo>(ruler)
         .add<DynastyMember>(dynasty);
+    void(ruler.add<MarriedTo>(spouse));
 
     return dynasty;
 }
@@ -103,19 +104,6 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         .add(flecs::Symmetric));
     void(ecs.component<InRealm>().add(flecs::Transitive)); // Used for hierarchy
 
-    const auto path = std::filesystem::path(SDL_GetBasePath()) / "Assets" / "Names.toml";
-    toml::table tbl = toml::parse_file(path.string());
-
-    auto builder = CharacterBuilder {
-        .ecs = ecs,
-        .dynastyNames = tbl["dynasties"]["names"].as_array(),
-        .provinceNames = tbl["provinces"]["names"].as_array(),
-        .maleNames = tbl["characters"]["male"]["names"].as_array(),
-        .femaleNames = tbl["characters"]["female"]["names"].as_array(),
-    };
-    for (size_t i = 0; i < 3; i += 1)
-        void(builder.CreateDynastyWithKingdomAndFamily(i));
-
     // 3. Initialize Cached Queries
 
     // --- Cached Queries Declarations ---
@@ -142,13 +130,29 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         });
 }
 
+void CreateKingdoms(const flecs::world &ecs, size_t count)
+{
+    const auto path = std::filesystem::path(SDL_GetBasePath()) / "Assets" / "Names.toml";
+    toml::table tbl = toml::parse_file(path.string());
+
+    auto builder = CharacterBuilder {
+        .ecs = ecs,
+        .dynastyNames = tbl["dynasties"]["names"].as_array(),
+        .provinceNames = tbl["provinces"]["names"].as_array(),
+        .maleNames = tbl["characters"]["male"]["names"].as_array(),
+        .femaleNames = tbl["characters"]["female"]["names"].as_array(),
+    };
+    for (size_t i = 0; i < count; i += 1)
+        void(builder.CreateDynastyWithKingdomAndFamily(i));
+}
+
 // 1. Renders the main window listing all rulers.
 void RenderCharacterOverviewWindow(
     const flecs::world& ecs,
     const flecs::query<const Character> &qRulers,
     const flecs::query<> &qInRealm)
 {
-    if (ImGui::Begin("👑 Character Overview"))
+    if (ImGui::Begin("Character Overview"))
     {
         ImGui::BeginTable("RulerListCols", 3);
         ImGui::TableNextRow();
@@ -195,22 +199,29 @@ void RenderCharacterOverviewWindow(
 // 2. Renders a detailed window for a single character entity.
 void RenderCharacterDetailWindow(
     const flecs::world &ecs,
-    const flecs::entity character,
+    const flecs::entity characterEntity,
     const flecs::query<>& qInRealm,
     const Character& c)
 {
     const std::string window_name = c.mName + " - Details";
-    bool open = character.enabled<ShowCharacterDetails>();
+    bool open = characterEntity.enabled<ShowCharacterDetails>();
+
 
     if (ImGui::Begin(window_name.c_str(), &open))
     {
+        const auto &character = characterEntity.get<Character>();
+
         // --- BASIC INFO & DYNASTY ---
-        flecs::entity dynasty_target = character.target<DynastyMember>();
+        flecs::entity dynasty_target = characterEntity.target<DynastyMember>();
         auto *d = dynasty_target.try_get<Dynasty>();
         ImGui::Text("Dynasty: %s", d ? d->name.c_str() : "None");
 
+        ImGui::Text("Money: %.2f", character.MoneyFloat());
+
+        ImGui::Text("Age: %zu Y %zu M %zu D", character.mAgeDays / 360, character.mAgeDays / 30 % 12, character.mAgeDays % 30);
+
         // --- MARRIAGE ---
-        flecs::entity spouse_target = character.target<MarriedTo>();
+        flecs::entity spouse_target = characterEntity.target<MarriedTo>();
         if (spouse_target.is_valid())
         {
             auto* spouse = spouse_target.try_get<Character>();
@@ -218,11 +229,11 @@ void RenderCharacterDetailWindow(
         }
 
         // ImGui::Separator();
-        ImGui::Text("🏰 Landed Holdings:");
+        ImGui::Text("Landed Holdings:");
 
         // --- TITLES & PROVINCES (Hierarchy Traversal) ---
         // Reuse q_ruled_titles to find the direct holdings
-        if (auto title_entity = character.target_for<Title>(ecs.component<Ruler>()))
+        if (auto title_entity = characterEntity.target_for<Title>(ecs.component<Ruler>()))
         {
             if (const auto* t = title_entity.try_get<Title>();
                 ImGui::TreeNodeEx(t->name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
@@ -250,7 +261,7 @@ void RenderCharacterDetailWindow(
 
     if (!open)
     {
-        void(character.disable<ShowCharacterDetails>());
+        void(characterEntity.disable<ShowCharacterDetails>());
     }
 
     ImGui::End();
