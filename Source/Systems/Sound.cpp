@@ -18,7 +18,7 @@ SoundModule::SoundModule(const flecs::world& ecs)
     }
 
     const auto songPath = std::filesystem::path(SDL_GetBasePath()) / "Assets/Medieval Dance - Saltarello [787351].mp3";
-    const auto audio = MIX_LoadAudio(mixer, songPath.c_str(), true);
+    const auto audio = MIX_LoadAudio(mixer, songPath.string().data(), true);
 
     if (audio == nullptr) {
         SDL_LogError(SDL_LOG_CATEGORY_AUDIO, "Failed to load audio: %s", SDL_GetError());

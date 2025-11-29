@@ -1,5 +1,7 @@
 #include <SDL3/SDL.h>
 #include "Shader.hpp"
+
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
@@ -16,11 +18,11 @@ Shader::~Shader()
 {
 }
 
-bool Shader::Load(const std::string& name)
+bool Shader::Load(const std::filesystem::path& name)
 {
 	// Compile vertex and pixel shaders
-	if (!CompileShader(name + ".vert", GL_VERTEX_SHADER, mVertexShader) ||
-		!CompileShader(name + ".frag", GL_FRAGMENT_SHADER, mFragShader))
+	if (!CompileShader(std::filesystem::path(name).replace_extension(".vert"), GL_VERTEX_SHADER, mVertexShader) ||
+		!CompileShader(std::filesystem::path(name).replace_extension(".frag"), GL_FRAGMENT_SHADER, mFragShader))
 	{
 		return false;
 	}
@@ -115,7 +117,7 @@ void Shader::SetIntegerUniform(const char *name, int value) const
 	glUniform1i(loc, value);
 }
 
-bool Shader::CompileShader(const std::string& fileName, GLenum shaderType, GLuint& outShader)
+bool Shader::CompileShader(const std::filesystem::path& fileName, GLenum shaderType, GLuint& outShader)
 {
 	// Open file
 	std::ifstream shaderFile(fileName);
@@ -125,7 +127,7 @@ bool Shader::CompileShader(const std::string& fileName, GLenum shaderType, GLuin
 		std::stringstream sstream;
 		sstream << shaderFile.rdbuf();
 		std::string contents = sstream.str();
-		const char* contentsChar = contents.c_str();
+		const char* contentsChar = contents.data();
 
 		// Create a shader of the specified type
 		outShader = glCreateShader(shaderType);
@@ -136,13 +138,13 @@ bool Shader::CompileShader(const std::string& fileName, GLenum shaderType, GLuin
 
 		if (!IsCompiled(outShader))
 		{
-			SDL_Log("Failed to compile shader %s", fileName.c_str());
+			SDL_Log("Failed to compile shader %s", fileName.string().data());
 			return false;
 		}
 	}
 	else
 	{
-		SDL_Log("Shader file not found: %s", fileName.c_str());
+		SDL_Log("Shader file not found: %s", fileName.string().data());
 		return false;
 	}
 

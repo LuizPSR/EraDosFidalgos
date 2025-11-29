@@ -5,6 +5,8 @@
 #include <filesystem>
 
 #include "Characters.hpp"
+
+#include "Game.hpp"
 #include "../Components/Province.hpp"
 
 struct CharacterBuilder
@@ -77,6 +79,8 @@ flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t i
 
 CharactersModule::CharactersModule(const flecs::world& ecs)
 {
+    const flecs::entity tickTimer = ecs.get<GameTimers>().mTickTimer;
+
     void(ecs.component<ShowCharacterDetails>()
         .add(flecs::Trait)
         .add(flecs::CanToggle));
@@ -131,6 +135,7 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         .build();
 
     ecs.system<>()
+        .tick_source(tickTimer)
         .run([qRulers, qInRealm](const flecs::iter &it)
         {
             const auto &ecs = it.world();
@@ -229,7 +234,7 @@ void RenderCharacterDetailWindow(
                         // Check if it's a Province
                         auto p = holding_entity.try_get<Province>();
                         if (p) {
-                            ImGui::BulletText("Province: %s (Income: $%.2lf)", p->name.c_str(), p->income * 0.01);
+                            ImGui::BulletText("Province: %s (Income: $%.2lf)", p->name.c_str(), p->IncomeFloat());
                         }
 
                         // Check if it's a Vassal Title (Title to Title: MemberOf)

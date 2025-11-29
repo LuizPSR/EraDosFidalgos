@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <GL/glew.h>
 #include <string>
 #include <glm/glm.hpp>
@@ -11,7 +12,7 @@ public:
 
 	// Load shader of the specified name, excluding
 	// the .frag/.vert extension
-	bool Load(const std::string& name);
+	bool Load(const std::filesystem::path& name);
 	void Unload();
 
     // Set this as the active shader program
@@ -27,7 +28,7 @@ public:
 
 private:
 	// Tries to compile the specified shader
-	bool CompileShader(const std::string& fileName, GLenum shaderType, GLuint& outShader);
+	bool CompileShader(const std::filesystem::path& fileName, GLenum shaderType, GLuint& outShader);
 
 	// Tests whether shader compiled successfully
 	bool IsCompiled(GLuint shader);

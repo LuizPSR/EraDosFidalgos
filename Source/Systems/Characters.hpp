@@ -10,6 +10,7 @@ struct Title
 struct Character
 {
     std::string name;
+    uint64_t money;
 };
 
 struct Dynasty

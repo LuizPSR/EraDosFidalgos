@@ -6,7 +6,10 @@
 
 ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
 {
+    const flecs::entity tickTimer = ecs.get<GameTimers>().mTickTimer;
+
     void(ecs.system<Camera, const InputState, const Window>("UpdateCamera")
+        .tick_source(tickTimer)
         .kind(flecs::OnLoad)
         .each([](const flecs::iter& it, size_t, Camera &camera, const InputState &input, const Window &window)
         {
@@ -21,6 +24,7 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
         }));
 
     void(ecs.system<Camera, const Window>("SceneUI")
+        .tick_source(tickTimer)
         .kind(flecs::OnUpdate)
         .each([](Camera &camera, const Window &window)
         {

@@ -5,6 +5,13 @@
 bool Initialize(flecs::world &ecs);
 void ProcessInput(const flecs::world &ecs);
 void RegisterSystems(flecs::world &ecs);
+void ImportModules(flecs::world &ecs);
+
+struct GameTimers
+{
+    // Disabled on pause
+    flecs::timer mTickTimer;
+};
 
 struct InputState
 {

@@ -2,9 +2,13 @@
 #include <imgui.h>
 
 #include "Events.hpp"
+#include "Characters.hpp"
+#include "Game.hpp"
 
 EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 {
+    const flecs::entity tickTimer = ecs.get<GameTimers>().mTickTimer;
+
     void(ecs.component<FiredEvent>()
         .add(flecs::Trait)
         .add(flecs::CanToggle));
@@ -14,6 +18,7 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
         .emplace<GameTime>(GameTime{}));
 
     ecs.system<GameTime>()
+        .tick_source(tickTimer)
         .each([](const flecs::iter &it, size_t, GameTime &gameTime)
         {
             float speedChange = it.delta_time() * gameTime.mSpeedAccel;
@@ -26,6 +31,7 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
         });
 
     ecs.system<const EventSchedule, const GameTime>()
+        .tick_source(tickTimer)
         .order_by<EventSchedule>([](
             flecs::entity_t, const EventSchedule *a,
             flecs::entity_t, const EventSchedule *b)
@@ -48,12 +54,16 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
         });
 
     ecs.system<const SamplePopup, const FiredEvent>()
+        .tick_source(tickTimer)
         .each([](const flecs::entity &e, const SamplePopup& p, const FiredEvent&)
         {
             auto name = "Popup##" + std::to_string(e.id());
+
+            const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2{0.5f, 0.5f});
             if (ImGui::Begin(name.c_str(), nullptr, ImGuiWindowFlags_NoDocking))
             {
-                ImGui::Text("ID %lu", e.id());
+                ImGui::Text("ID %zu", e.id());
                 ImGui::Text("%s", p.mMessage.c_str());
                 if (ImGui::Button("Close me"))
                 {
@@ -64,6 +74,7 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
         });
 
     ecs.system<GameTime>()
+        .tick_source(tickTimer)
         .each([](GameTime &t)
         {
             if (ImGui::Begin("Time Controls"))

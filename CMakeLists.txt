@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(PROJECT_NAME "EraDosFidalgos")
 project(${PROJECT_NAME})
 
+set(OpenGL_GL_PREFERENCE LEGACY)
 list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/deps")
 
 find_package(SDL3 REQUIRED CONFIG)
@@ -34,9 +35,25 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         tomlplusplus::tomlplusplus
         glm::glm
         m) # Math
+# Provides audio for Linux
 if (ALSA_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE ALSA::ALSA)
 endif ()
 
 set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 target_include_directories(${PROJECT_NAME} PUBLIC ${SOURCE_DIR})
+
+install(TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION .
+    COMPONENT GameFiles)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/
+    DESTINATION Assets
+    COMPONENT GameFiles)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Shaders/
+    DESTINATION Shaders
+    COMPONENT GameFiles)
+
+if (WIN32)
+    target_link_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++ -static)
+    install(FILES $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> DESTINATION .)
+endif ()
