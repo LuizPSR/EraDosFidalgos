@@ -3,6 +3,7 @@
 #include <flecs.h>
 
 #include "Components/Province.hpp"
+#include "Components/Culture.hpp"
 
 struct Title
 {
@@ -24,7 +25,13 @@ struct Character
 
 // -- RELATIONS --
 
+struct CharacterCulture {CultureType culture;};
+
 struct RuledBy {};
+
+struct RulerOf {};
+
+struct CapitalOf {};
 
 struct Courtier {};
 

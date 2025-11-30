@@ -1,6 +1,7 @@
 #pragma once
 #include <flecs.h>
 #include <string>
+#include <imgui.h>
 
 namespace UICommon {
     // Função auxiliar para obter entidade por nome

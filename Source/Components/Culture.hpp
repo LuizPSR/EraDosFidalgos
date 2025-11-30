@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Province.hpp"
 #include "Army.hpp"
+#include "Geograph.hpp"
 
 enum CultureType {
     SteppeNomads,
@@ -23,7 +23,8 @@ struct CultureTraits {
     bool extra_movement;
 };
 
-CultureTraits GetTraits(CultureType culture) {
+
+static CultureTraits GetCulturalTraits(const CultureType culture) {
     switch (culture) {
         case SteppeNomads:
             return {
@@ -81,4 +82,16 @@ CultureTraits GetTraits(CultureType culture) {
                 false
             };
     }
+    return {
+        LightInfantry,
+                ArcherInfantry,
+
+                Plains,
+                Grasslands,
+
+                false,
+                false,
+                false,
+                false
+    };
 }

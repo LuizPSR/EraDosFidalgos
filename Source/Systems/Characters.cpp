@@ -2,12 +2,15 @@
 #include <flecs.h>
 #include <toml++/toml.hpp>
 #include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL.h>
 #include <filesystem>
 
 #include "Characters.hpp"
 
 #include "Game.hpp"
-#include "../Components/Province.hpp"
+#include "Components/Province.hpp"
+#include "Components/Culture.hpp"
+#include "MapGenerator.hpp"
 
 #include "Components/Dynasty.hpp"
 // TODO: make random deterministic
@@ -25,6 +28,7 @@ struct CharacterBuilder
     std::string GenDynastyName() const;
     std::string GenMaleName() const;
     std::string GenFemaleName() const;
+    CultureType GenCulture() const;
 
     flecs::entity CreateDynastyWithKingdomAndFamily(size_t index) const;
     flecs::entity CreateCharacter(
@@ -94,6 +98,20 @@ std::string CharacterBuilder::GenFemaleName() const
         + getRandomArrayElement(femaleNames["suffixes"].as_array());
 }
 
+CultureType CharacterBuilder::GenCulture() const
+{
+    switch (Random::GetIntRange(1, 4)) {
+        case 0:
+            return SteppeNomads;
+        case 1:
+            return HillDwellers;
+        case 2:
+            return ForestFolk;
+        default:
+            return FarmLanders;
+    }
+}
+
 flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t index) const
 {
     auto dName = GenDynastyName();
@@ -101,27 +119,21 @@ flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t i
     auto dynasty = ecs.entity().set<Dynasty>({ dName });
 
     auto kingdom = ecs.entity().set<Title>({ dName + " Kingdom" });
+    auto culture = GenCulture();
 
-    auto capital = ecs.entity()
-        .set<Province>({ dName + " " + GenProvinceName() })
-        .add<InRealm>(kingdom);
-
-    for (size_t i = 0; i < 9; i += 1)
-    {
-        void(ecs.entity()
-            .set<Province>({ dName + " " + GenProvinceName() })
-            .add<InRealm>(kingdom));
-    }
-
+    dynasty.add<CharacterCulture>(culture);
     auto rulerName = GenMaleName();
     auto ruler = CreateCharacter(rulerName, dynasty, true)
-        .add<DynastyHead>(dynasty);
+        .add<DynastyHead>(dynasty).add<CharacterCulture>(culture);
     void(kingdom.add<RuledBy>(ruler));
+
+    ruler.add<RulerOf>(kingdom);
 
     auto spouseName = GenFemaleName();
     auto spouse = CreateCharacter(spouseName, dynasty, false)
         .add<MarriedTo>(ruler)
-        .add<DynastyMember>(dynasty);
+        .add<DynastyMember>(dynasty)
+        .add<CharacterCulture>(GenCulture());
     void(ruler.add<MarriedTo>(spouse));
 
     return dynasty;
@@ -195,9 +207,232 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
 
 void CreateKingdoms(const flecs::world &ecs, size_t count)
 {
-    const auto &builder = ecs.get<CharacterBuilder>();
-    for (size_t i = 0; i < count; i += 1)
-        void(builder.CreateDynastyWithKingdomAndFamily(i));
+    // Local structure for the priority queue in the Dijkstra-like algorithm
+    struct ProvinceDistance
+    {
+        flecs::entity province_entity;
+        float distance; // Accumulated distance from the seed
+
+        // Min-heap ordering (std::priority_queue is max-heap by default, so use operator>)
+        bool operator>(const ProvinceDistance& other) const
+        {
+            return distance > other.distance;
+        }
+    };
+
+    struct EntityHash {
+        size_t operator()(const flecs::entity& e) const {
+            // Use the underlying ID of the entity for hashing.
+            return std::hash<uint64_t>{}(e.id());
+        }
+    };
+
+    // Map to hold all unruled, non-sea provinces still available for a new kingdom seed
+    std::unordered_map<flecs::entity, bool, EntityHash> available_provinces;
+    std::unordered_map<flecs::entity, float, EntityHash> current_expansion_distance;
+
+    // --- 1. Identify all initial unruled, non-sea provinces ---
+
+    flecs::entity tilemap_entity = ecs.lookup("TileMap");
+    if (!tilemap_entity.is_valid()) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "CreateKingdoms: TileMap entity not found. Cannot generate kingdoms.");
+        return;
+    }
+    const TileMap* tilemap = &tilemap_entity.get<TileMap>();
+    if (!tilemap) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "CreateKingdoms: TileMap component not found. Cannot generate kingdoms.");
+        return;
+    }
+
+    // Query all province entities to build the initial available pool
+    ecs.each<const Province>([&](const flecs::entity p_entity, const Province& p) {
+        // Check 1: Is it a non-sea tile?
+        if (p.terrain != TerrainType::Sea) {
+            // Check 2: Is it unruled? (Check for the target of the RuledBy relationship)
+            if (!p_entity.target<RuledBy>().is_valid()) {
+                available_provinces[p_entity] = true;
+            }
+        }
+    });
+
+    if (available_provinces.empty()) {
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "No available non-sea provinces to form kingdoms.");
+        return;
+    }
+
+    const auto& builder = ecs.get<CharacterBuilder>();
+    int kingdom_index = 0;
+
+    // --- 2. Kingdom Generation Loop ---
+    while (!available_provinces.empty())
+    {
+        // A. Create New Kingdom (Dynasty/Title)
+        kingdom_index++;
+        flecs::entity kingdom_dynasty = builder.CreateDynastyWithKingdomAndFamily(kingdom_index);
+        flecs::entity kingdom_title = kingdom_dynasty.target<DynastyHead>().target<RulerOf>();
+
+        // B. Select Random Seed Province (Initial Capital)
+        std::vector<flecs::entity> current_unruled_provinces;
+        for (const auto&[fst, snd] : available_provinces) {
+            if (snd) { // Only pick truly available provinces
+                current_unruled_provinces.push_back(fst);
+            }
+        }
+
+        if (current_unruled_provinces.empty()) {
+            break; // No more provinces available
+        }
+
+        flecs::entity seed_province_entity = current_unruled_provinces[Random::GetIntRange(0, current_unruled_provinces.size() - 1)];
+
+        // Temporary maps and queue for the current kingdom's expansion
+        std::vector<flecs::entity> newly_claimed_provinces;
+        std::priority_queue<ProvinceDistance, std::vector<ProvinceDistance>, std::greater<ProvinceDistance>> pq;
+
+        // 1. Initialize Seed
+        pq.push({seed_province_entity, 0.0f});
+        current_expansion_distance[seed_province_entity] = 0.0f;
+
+        // Claim seed province
+        available_provinces[seed_province_entity] = false; // Mark as no longer available in the pool
+        newly_claimed_provinces.push_back(seed_province_entity);
+        seed_province_entity.add<InRealm>(kingdom_title);
+
+        // 2. Expansion Loop (Dijkstra-like)
+        while (!pq.empty())
+        {
+            ProvinceDistance current = pq.top();
+            pq.pop();
+
+            flecs::entity current_entity = current.province_entity;
+            float current_dist = current.distance;
+
+            // Get current tile data
+            const TileData* current_tile_data = &current_entity.get<TileData>();
+            const Province* current_province = &current_entity.get<Province>();
+
+            if (!current_tile_data || !current_province) continue;
+
+            // Cost to move *from* the current tile to a neighbor
+            float travel_cost = current_province->movement_cost;
+
+            // Iterate through 4 cardinal directions
+            const int dx[] = {0, 0, 1, -1};
+            const int dy[] = {1, -1, 0, 0};
+
+            for (int i = 0; i < 4; ++i)
+            {
+                int nx = current_tile_data->x + dx[i];
+                int ny = current_tile_data->y + dy[i];
+
+                // Check bounds
+                if (nx < 0 || nx >= MAP_WIDTH || ny < 0 || ny >= MAP_HEIGHT) {
+                    continue;
+                }
+
+                flecs::entity neighbor_entity = tilemap->tiles[nx][ny];
+                if (!neighbor_entity.is_valid()) continue;
+
+                const Province* neighbor_province = &neighbor_entity.get<Province>();
+                if (!neighbor_province) continue;
+
+                // Ignore sea tiles
+                if (neighbor_province->terrain == TerrainType::Sea) {
+                    continue;
+                }
+
+                // Calculate new distance using the current tile's movement cost
+                float new_dist = current_dist + travel_cost;
+
+                // Stop condition: distance > 300
+                if (new_dist > 300.0f) {
+                    continue;
+                }
+
+                // Check if the tile is unruled (available)
+                bool is_available = available_provinces.count(neighbor_entity) && available_provinces.at(neighbor_entity);
+                // Check if the tile is already claimed by this kingdom (i.e., in the newly_claimed list)
+                bool is_claimed_by_self = std::find(newly_claimed_provinces.begin(), newly_claimed_provinces.end(), neighbor_entity) != newly_claimed_provinces.end();
+
+                // Get the old distance (or infinity if not yet reached)
+                float old_dist = current_expansion_distance.count(neighbor_entity)
+                               ? current_expansion_distance.at(neighbor_entity)
+                               : std::numeric_limits<float>::infinity();
+
+                if (is_available || is_claimed_by_self)
+                {
+                    if (new_dist < old_dist)
+                    {
+                        // Found a shorter path
+                        current_expansion_distance[neighbor_entity] = new_dist;
+
+                        // Claim it if it was available (only claims unruled tiles)
+                        if (is_available) {
+                            available_provinces[neighbor_entity] = false; // Mark as no longer available
+                            newly_claimed_provinces.push_back(neighbor_entity);
+                            neighbor_entity.add<RuledBy>(kingdom_title); // Assign ownership
+                        }
+                        // Push to queue for further expansion
+                        pq.push({neighbor_entity, new_dist});
+                    }
+                }
+            }
+        }
+
+        // D. Select Capital (Most Central Province: minimum distance from the initial seed)
+        flecs::entity capital_province_entity = flecs::entity::null();
+        float min_dist = std::numeric_limits<float>::max();
+
+        for (flecs::entity p_entity : newly_claimed_provinces)
+        {
+            if (current_expansion_distance.count(p_entity))
+            {
+                float dist = current_expansion_distance.at(p_entity);
+                if (dist < min_dist)
+                {
+                    min_dist = dist;
+                    capital_province_entity = p_entity;
+                }
+            }
+        }
+
+        // E. Set Capital Relation and Update Province Distances
+        if (capital_province_entity.is_valid())
+        {
+            // Set the capital relationship: Province has (CapitalOf, KingdomTitleEntity)
+            capital_province_entity.add<CapitalOf>(kingdom_title);
+
+
+            auto ruler = kingdom_dynasty.target<DynastyHead>();
+            // Update distance_to_capital for all provinces in the realm
+            for (flecs::entity p_entity : newly_claimed_provinces)
+            {
+                if (Province* p = p_entity.try_get_mut<Province>())
+                {
+                    // Store the shortest distance from the most central seed as distance_to_capital
+                    p->distance_to_capital = current_expansion_distance.count(p_entity)
+                                            ? current_expansion_distance.at(p_entity)
+                                            : std::numeric_limits<float>::infinity();
+
+                    auto traits = GetCulturalTraits(p->culture);
+
+                    p->name = builder.GenProvinceName();
+
+                    p->popular_opinion = ruler.target<CharacterCulture>() == p->culture ? 10 : -10;
+                    p->control = 80 +
+                        p->popular_opinion -
+                        p->distance_to_capital * 0.2f +
+                        10 * GetCulturalTraits(ruler.get<CharacterCulture>().culture).extra_control;
+                    p->development = Random::GetIntRange(3, 15) + 5 * traits.extra_development;
+
+                    p->income = 5 * (100 + p->development) * p->control;
+                }
+            }
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Kingdom %d formed with %zu provinces. Capital set.", kingdom_index, newly_claimed_provinces.size());
+        } else {
+             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Kingdom %d generated no provinces. This should not happen if a seed was available.", kingdom_index);
+        }
+    }
 }
 
 // 1. Renders the main window listing all rulers.
@@ -308,5 +543,8 @@ flecs::entity BirthChildCharacter(const flecs::world& ecs, const Character& fath
     const auto &builder = ecs.get<CharacterBuilder>();
     bool isMale = Random::GetIntRange(0, 1);
     auto name = isMale ? builder.GenMaleName() : builder.GenFemaleName();
-    return builder.CreateCharacter(name, dynasty, isMale);
+    auto child = builder.CreateCharacter(name, dynasty, isMale);
+
+    child.set<CharacterCulture>(dynasty.get<CharacterCulture>());
+    return child;
 }
