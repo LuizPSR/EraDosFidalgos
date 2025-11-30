@@ -90,6 +90,15 @@ names.prefixes = [
     "Cor",
     "Dar",
     "Si",
+    "Zen",
+    "Aethel",
+    "Kael",
+    "Morth",
+    "Dre",
+    "Ul",
+    "Bran",
+    "Fen",
+    "Aelf",
 ]
 names.infixes = [
     "ar",
@@ -104,6 +113,15 @@ names.infixes = [
     "an",
     "tha",
     "bin",
+    "dan",
+    "dor",
+    "eth",
+    "im",
+    "och",
+    "us",
+    "mir",
+    "var",
+    "wyn",
 ]
 names.suffixes = [
     "ic",
@@ -116,6 +134,15 @@ names.suffixes = [
     "as",
     "is",
     "yn",
+    "ar",
+    "d",
+    "or",
+    "um",
+    "ax",
+    "eon",
+    "ok",
+    "o",
+    "gard",
 ]
 
 [characters.female]
@@ -136,6 +163,14 @@ names.prefixes = [
     "Li",
     "Ca",
     "Rhia",
+    "Ael",
+    "Myr",
+    "Xy",
+    "Gwen",
+    "Eira",
+    "Zia",
+    "Kith",
+    "Vex",
 ]
 names.infixes = [
     "ar",
@@ -152,6 +187,14 @@ names.infixes = [
     "tem",
     "ya",
     "lia",
+    "na",
+    "wyn",
+    "ora",
+    "bel",
+    "rin",
+    "lani",
+    "dith",
+    "phina",
 ]
 names.suffixes = [
     "a",
@@ -166,6 +209,14 @@ names.suffixes = [
     "ia",
     "e",
     "tte",
+    "elle",
+    "ith",
+    "wyn",
+    "ra",
+    "ia",
+    "iel",
+    "wen",
+    "yn",
 ]
 
 [terrain_types.modifiers]
