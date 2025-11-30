@@ -15,6 +15,8 @@
 #include "Systems/Characters.hpp"
 #include "Systems/Sound.hpp"
 
+#include "Systems/MapGenerator.hpp"
+
 struct MainMenuModule
 {
     explicit MainMenuModule(flecs::world &ecs);
@@ -248,6 +250,13 @@ void RegisterSystems(flecs::world &ecs)
 
             renderer.Present();
         });
+
+    // Register the map generation system
+    RegisterMapGenerationSystem(ecs);
+
+    // Trigger map generation by creating an entity with GenerateMap component
+    ecs.entity()
+        .set<GenerateMap>({42});  // seed = 42
 }
 
 void ImportModules(flecs::world& ecs)
