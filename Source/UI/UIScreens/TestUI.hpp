@@ -13,7 +13,7 @@
 struct TestUIModule {
     explicit TestUIModule(flecs::world &ecs);
 
-    static void ShowTestUI(const flecs::world& ecs, GameTimers& timers);
+    static void ShowTestUI(const flecs::world& ecs, GameTickSources& timers);
 };
 
 #endif //ERADOSFIDALGOS_TESTUI_H
