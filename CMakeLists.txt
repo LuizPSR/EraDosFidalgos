@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.26)
 # Configurando o padrão c++
 set(CMAKE_CXX_STANDARD 20)
 
+cmake_policy(SET CMP0135 NEW)
+cmake_policy(SET CMP0003 NEW)
+
 # Configurando o nome e executável do projeto
 set(PROJECT_NAME "EraDosFidalgos")
 project(${PROJECT_NAME})

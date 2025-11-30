@@ -2,11 +2,12 @@
 
 #include "imgui.h"
 #include "Game.hpp"
+#include "GameTime.hpp"
 #include "Renderer/Shader.hpp"
 
 ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
 {
-    const auto &timers = ecs.get<GameTimers>();
+    const auto &timers = ecs.get<GameTime>();
     const flecs::entity tickTimer = timers.mTickTimer;
 
     void(ecs.system<Camera, const InputState, const Window>("UpdateCamera")

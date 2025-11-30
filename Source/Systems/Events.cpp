@@ -6,8 +6,11 @@
 #include "Game.hpp"
 
 // TODO: remove this
+#include <algorithm>
 #include <SDL3/SDL.h>
 
+#include "EstatePower.hpp"
+#include "ProvinceRevenue.hpp"
 #include "Components/Province.hpp"
 
 void CenterNextImGuiWindow()
@@ -176,53 +179,6 @@ void DoEventSchedulingSystems(const flecs::world& ecs, flecs::timer tickTimer)
         });
 }
 
-void DoGameTimeSystems(const flecs::world& ecs, flecs::timer tickTimer)
-{
-    void(ecs.component<GameTime>()
-        .add(flecs::Singleton));
-
-    // Advances the game time by the set speed
-    ecs.system<GameTime, const GameTimers>()
-        .write<flecs::TickSource>()
-        .kind(flecs::PreUpdate)
-        .tick_source(tickTimer)
-        .each([](const flecs::iter &it, size_t, GameTime &gameTime, const GameTimers &timers)
-        {
-            if (it.world().count<PausesGame>() > 0) return;
-
-            float speedChange = it.delta_time() * gameTime.mSpeedAccel;
-            if (gameTime.mSpeed < -speedChange)
-                gameTime.mSpeed = 0;
-            else
-                gameTime.mSpeed += speedChange;
-            gameTime.mSpeedAccel *= powf(0.1, it.delta_time());
-
-            gameTime.mLastTimeSecs = gameTime.mTimeSecs;
-            gameTime.mTimeSecs += uint64_t(it.delta_time() * gameTime.mSpeed * 86400.0);
-            if (gameTime.CountDayChanges() != 0)
-            {
-                // Immediately tick the systems which use DayTimer
-                auto &tickSource = timers.mDayTimer.get_mut<EcsTickSource>();
-                tickSource.tick = true;
-            }
-        });
-
-    // Controls for game speed
-    ecs.system<GameTime>()
-        .kind(flecs::OnUpdate)
-        .tick_source(tickTimer)
-        .each([](GameTime &t)
-        {
-            if (ImGui::Begin("Time Controls"))
-            {
-                ImGui::Text("Day %zu %02zu:%02zu", t.TimeDays(), t.TimeHours(), t.TimeMinutes());
-                ImGui::SliderFloat("Speed", &t.mSpeed, 0.0f, 2.0f, "%.2f d/s");
-                ImGui::SliderFloat("Accel", &t.mSpeedAccel, -0.5f, 0.5f, "%.2f d/s²");
-            }
-            ImGui::End();
-        });
-}
-
 void DoSamplePopupSystem(const flecs::world& ecs, flecs::timer tickTimer)
 {
     // Sample Popup for testing event schedules
@@ -249,30 +205,7 @@ void DoSamplePopupSystem(const flecs::world& ecs, flecs::timer tickTimer)
         });
 }
 
-void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTimers &timers)
-{
-    auto qProvinceRuler = ecs.query_builder<Character>("qProvinceRuler")
-        .with<RuledBy>("$this").src("$title")
-        .with<InRealm>("$title").src("$province")
-        .build();
-
-    ecs.system<Province, const GameTime>()
-        .tick_source(timers.mDayTimer)
-        .each([=](flecs::iter &it, size_t i, Province &province, const GameTime &gameTime)
-        {
-            size_t days = gameTime.CountDayChanges();
-            qProvinceRuler
-                .set_var("province", it.entity(i))
-                .each([&](Character &character)
-                {
-                    character.mMoney += province.income * days;
-                });
-
-            // TODO: pay taxes to higher lieges
-        });
-}
-
-void DoCharacterAgingSystem(const flecs::world& ecs, const GameTimers& timers)
+void DoCharacterAgingSystem(const flecs::world& ecs, const GameTime& timers)
 {
     ecs.system<Character, const GameTime>()
         .tick_source(timers.mDayTimer)
@@ -286,15 +219,15 @@ void DoCharacterAgingSystem(const flecs::world& ecs, const GameTimers& timers)
 
 EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 {
-    const auto &timers = ecs.get<GameTimers>();
+    const auto &timers = ecs.get<GameTime>();
 
     DoGameTimeSystems(ecs, timers.mTickTimer);
 
     DoEventSchedulingSystems(ecs, timers.mTickTimer);
 
-    DoAdultMarriageSystems(ecs, timers.mTickTimer);
+    // DoAdultMarriageSystems(ecs, timers.mTickTimer);
 
-    DoCharacterBirthSystems(ecs, timers.mTickTimer);
+    // DoCharacterBirthSystems(ecs, timers.mTickTimer);
 
     DoSamplePopupSystem(ecs, timers.mTickTimer);
 
@@ -302,13 +235,13 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 
     DoCharacterAgingSystem(ecs, timers);
 
+    DoEstatePowerSystems(ecs, timers);
+
     EventsSampleScene::InitializeEntities(ecs);
 }
 
 void EventsSampleScene::InitializeEntities(const flecs::world& ecs)
 {
-    void(ecs.component<GameTime>().set<GameTime>({}));
-
     void(ecs.entity()
         .emplace<SamplePopup>(SamplePopup{ "Bem vindo ao Era dos Fidalgos!" })
         .add<FiredEvent>());

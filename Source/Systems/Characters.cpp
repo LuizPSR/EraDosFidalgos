@@ -11,6 +11,7 @@
 
 #include "Components/Dynasty.hpp"
 // TODO: make random deterministic
+#include "GameTime.hpp"
 #include "Random.hpp"
 
 struct CharacterBuilder
@@ -26,19 +27,28 @@ struct CharacterBuilder
     std::string GenMaleName() const;
     std::string GenFemaleName() const;
 
-    flecs::entity CreateDynastyWithKingdomAndFamily(size_t index) const;
+    flecs::entity CreateDynastyWithKingdomAndFamily(bool isPlayer = false) const;
     flecs::entity CreateCharacter(
         const std::string& char_name,
         const flecs::entity& dynasty_entity,
-        bool isMale) const;
+        bool isMale,
+        flecs::entity baseEntity) const;
+    flecs::entity CreateCharacter(
+        const std::string& char_name,
+        const flecs::entity& dynasty_entity,
+        bool isMale) const
+    {
+        return CreateCharacter(char_name, dynasty_entity, isMale, ecs.entity());
+    }
 };
 
 flecs::entity CharacterBuilder::CreateCharacter(
     const std::string& char_name,
     const flecs::entity& dynasty_entity,
-    bool isMale) const
+    bool isMale,
+    flecs::entity baseEntity) const
 {
-    flecs::entity character = ecs.entity()
+    flecs::entity character = baseEntity
         .set<Character>({
             .mName = char_name,
             .mMoney = 123,
@@ -94,7 +104,7 @@ std::string CharacterBuilder::GenFemaleName() const
         + getRandomArrayElement(femaleNames["suffixes"].as_array());
 }
 
-flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t index) const
+flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer) const
 {
     auto dName = GenDynastyName();
 
@@ -114,7 +124,7 @@ flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t i
     }
 
     auto rulerName = GenMaleName();
-    auto ruler = CreateCharacter(rulerName, dynasty, true)
+    auto ruler = CreateCharacter(rulerName, dynasty, true, isPlayer ? ecs.entity<Player>() : ecs.entity())
         .add<DynastyHead>(dynasty);
     void(kingdom.add<RuledBy>(ruler));
 
@@ -147,7 +157,7 @@ void DoCreateCharacterBuilder(const flecs::world& ecs)
 
 CharactersModule::CharactersModule(const flecs::world& ecs)
 {
-    const flecs::entity tickTimer = ecs.get<GameTimers>().mTickTimer;
+    const flecs::entity tickTimer = ecs.get<GameTime>().mTickTimer;
 
     DoCreateCharacterBuilder(ecs);
 
@@ -196,8 +206,10 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
 void CreateKingdoms(const flecs::world &ecs, size_t count)
 {
     const auto &builder = ecs.get<CharacterBuilder>();
+    if (!ecs.entity<Player>().has<Character>())
+        void(builder.CreateDynastyWithKingdomAndFamily(true));
     for (size_t i = 0; i < count; i += 1)
-        void(builder.CreateDynastyWithKingdomAndFamily(i));
+        void(builder.CreateDynastyWithKingdomAndFamily());
 }
 
 // 1. Renders the main window listing all rulers.
@@ -260,6 +272,9 @@ void RenderCharacterDetailWindow(
         const auto &character = characterEntity.get<Character>();
 
         // --- BASIC INFO & DYNASTY ---
+        if (ecs.entity<Player>() == characterEntity)
+            ImGui::Text("Player Character");
+
         flecs::entity dynasty_target = characterEntity.target<DynastyMember>();
         auto *d = dynasty_target.try_get<Dynasty>();
         ImGui::Text("Dynasty: %s", d ? d->name.c_str() : "None");

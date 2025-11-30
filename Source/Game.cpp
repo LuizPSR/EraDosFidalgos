@@ -27,12 +27,12 @@ struct PauseMenuModule
     explicit PauseMenuModule(flecs::world &ecs);
 };
 
-void UnPause(const flecs::world &ecs, GameTimers &timers)
+void UnPause(const flecs::world &ecs, GameTime &timers)
 {
     void(timers.mTickTimer.start());
 }
 
-void Pause(const flecs::world &ecs, GameTimers &timers)
+void Pause(const flecs::world &ecs, GameTime &timers)
 {
     void(timers.mTickTimer.stop());
 }
@@ -49,8 +49,8 @@ struct TestUIModule
 
 MainMenuModule::MainMenuModule(flecs::world& ecs)
 {
-    ecs.system<GameTimers, const InputState>("MainMenu")
-        .each([](const flecs::iter &it, size_t, GameTimers &timers, const InputState &input)
+    ecs.system<GameTime, const InputState>("MainMenu")
+        .each([](const flecs::iter &it, size_t, GameTime &timers, const InputState &input)
         {
             const auto &ecs = it.world();
 
@@ -76,8 +76,8 @@ MainMenuModule::MainMenuModule(flecs::world& ecs)
 
 PauseMenuModule::PauseMenuModule(flecs::world& ecs)
 {
-    ecs.system<GameTimers, const InputState>("PauseMenu")
-       .each([](const flecs::iter &it, size_t, GameTimers &timers, const InputState &input)
+    ecs.system<GameTime, const InputState>("PauseMenu")
+       .each([](const flecs::iter &it, size_t, GameTime &timers, const InputState &input)
        {
            const auto &ecs = it.world();
 
@@ -106,12 +106,12 @@ PauseMenuModule::PauseMenuModule(flecs::world& ecs)
 
 TestUIModule::TestUIModule(flecs::world& ecs)
 {
-    const flecs::entity tickTimer = ecs.get<GameTimers>().mTickTimer;
+    const flecs::entity tickTimer = ecs.get<GameTime>().mTickTimer;
 
-    ecs.system<GameTimers>("UpdateUI")
+    ecs.system<GameTime>("UpdateUI")
         .tick_source(tickTimer)
         .kind(flecs::OnUpdate)
-        .each([](const flecs::iter &it, size_t, GameTimers &timers)
+        .each([](const flecs::iter &it, size_t, GameTime &timers)
         {
             const auto &ecs = it.world();
             if (auto input = ecs.try_get<InputState>(); input->WasEscapePressed)
@@ -181,10 +181,6 @@ bool Initialize(flecs::world &ecs)
         .add(flecs::Singleton)
         .add<InputState>());
 
-    void(ecs.component<GameTimers>()
-        .add(flecs::Singleton)
-        .emplace<GameTimers>(ecs));
-
     // Creates ImGUI ini file path
     // Has to have a static lifetime
     static char iniPathBuf[256] = {};
@@ -202,6 +198,11 @@ bool Initialize(flecs::world &ecs)
         return false;
     if (ImGui_ImplOpenGL3_Init("#version 330") == false)
         return false;
+
+    // Game Time
+    void(ecs.component<GameTime>()
+        .add(flecs::Singleton)
+        .emplace<GameTime>(GameTime{ecs}));
 
     // Init ECS
     RegisterSystems(ecs);
@@ -278,13 +279,6 @@ void ImportModules(flecs::world& ecs)
 
     void(ecs.import<EventsSampleScene>()
         .child_of<TestUIModule>());
-}
-
-GameTimers::GameTimers(const flecs::world& ecs)
-{
-    mTickTimer = ecs.timer("TickTimer");
-    mDayTimer = ecs.timer("DayTimer");
-    mDayTimer.stop();
 }
 
 void ProcessInput(const flecs::world &ecs)
