@@ -76,6 +76,7 @@ struct PregnancySaga
         Attempt,
         Announce,
         Birth,
+        BirthAnnounce,
     } stage = Attempt;
-    flecs::entity father, mother;
+    flecs::entity father, mother, dynasty, child;
 };
