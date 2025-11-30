@@ -7,7 +7,7 @@
 
 ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
 {
-    const auto &timers = ecs.get<GameTime>();
+    const auto &timers = ecs.get<GameTickSources>();
     const flecs::entity tickTimer = timers.mTickTimer;
 
     void(ecs.system<Camera, const InputState, const Window>("UpdateCamera")

@@ -205,7 +205,7 @@ void DoSamplePopupSystem(const flecs::world& ecs, flecs::timer tickTimer)
         });
 }
 
-void DoCharacterAgingSystem(const flecs::world& ecs, const GameTime& timers)
+void DoCharacterAgingSystem(const flecs::world& ecs, const GameTickSources& timers)
 {
     ecs.system<Character, const GameTime>()
         .tick_source(timers.mDayTimer)
@@ -219,7 +219,7 @@ void DoCharacterAgingSystem(const flecs::world& ecs, const GameTime& timers)
 
 EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 {
-    const auto &timers = ecs.get<GameTime>();
+    const auto &timers = ecs.get<GameTickSources>();
 
     DoGameTimeSystems(ecs, timers.mTickTimer);
 

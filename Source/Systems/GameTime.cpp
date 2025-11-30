@@ -4,28 +4,18 @@
 #include "Events.hpp"
 #include "Game.hpp"
 
-GameTime::GameTime(const flecs::world& ecs)
-{
-    mTickTimer = ecs.timer("TickTimer");
-    mDayTimer = ecs.timer("DayTimer");
-    mDayTimer.stop();
-    mWeekTimer = ecs.timer("WeekTimer");
-    mWeekTimer.stop();
-    mMonthTimer = ecs.timer("MonthTimer");
-    mMonthTimer.stop();
-}
-
 void DoGameTimeSystems(const flecs::world& ecs, flecs::timer tickTimer)
 {
     void(ecs.component<GameTime>()
-        .add(flecs::Singleton));
+        .add(flecs::Singleton)
+        .add<GameTime>());
 
     // Advances the game time by the set speed
-    ecs.system<GameTime, const GameTime>()
+    ecs.system<GameTime, const GameTickSources>()
         .write<flecs::TickSource>()
         .kind(flecs::PreUpdate)
         .tick_source(tickTimer)
-        .each([](const flecs::iter &it, size_t, GameTime &gameTime, const GameTime &timers)
+        .each([](const flecs::iter &it, size_t, GameTime &gameTime, const GameTickSources &timers)
         {
             if (it.world().count<PausesGame>() > 0) return;
 
@@ -52,6 +42,11 @@ void DoGameTimeSystems(const flecs::world& ecs, flecs::timer tickTimer)
             if (gameTime.CountMonthChanges() != 0)
             {
                 auto &tickSource = timers.mMonthTimer.get_mut<EcsTickSource>();
+                tickSource.tick = true;
+            }
+            if (gameTime.CountYearChanges() != 0)
+            {
+                auto &tickSource = timers.mYearTimer.get_mut<EcsTickSource>();
                 tickSource.tick = true;
             }
         });

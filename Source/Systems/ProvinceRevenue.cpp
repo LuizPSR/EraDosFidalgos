@@ -4,7 +4,7 @@
 #include "GameTime.hpp"
 #include "Components/Province.hpp"
 
-void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTime &timers)
+void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTickSources &timers)
 {
     auto qProvinceRuler = ecs.query_builder<Character>("qProvinceRuler")
         .with<RuledBy>("$this").src("$title")

@@ -34,4 +34,4 @@ struct EstatePowerEvent
     std::vector<EstateEventChoice> mChoices;
 };
 
-void DoEstatePowerSystems(const flecs::world& ecs, const GameTime& timers);
+void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers);

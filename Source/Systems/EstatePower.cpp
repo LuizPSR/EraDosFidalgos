@@ -42,7 +42,7 @@ std::vector<EstatePowerEvent> readEstatePowerEventsFromFile()
     return result;
 }
 
-void DoEstatePowerSystems(const flecs::world& ecs, const GameTime& timers)
+void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers)
 {
     void(ecs.component<EstatePowers>()
         .add(flecs::Singleton)

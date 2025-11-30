@@ -4,4 +4,4 @@
 #include "Game.hpp"
 #include "GameTime.hpp"
 
-void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTime &timers);
+void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTickSources &timers);

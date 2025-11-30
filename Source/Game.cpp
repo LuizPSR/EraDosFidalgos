@@ -27,12 +27,12 @@ struct PauseMenuModule
     explicit PauseMenuModule(flecs::world &ecs);
 };
 
-void UnPause(const flecs::world &ecs, GameTime &timers)
+void UnPause(const flecs::world &ecs, GameTickSources &timers)
 {
     void(timers.mTickTimer.start());
 }
 
-void Pause(const flecs::world &ecs, GameTime &timers)
+void Pause(const flecs::world &ecs, GameTickSources &timers)
 {
     void(timers.mTickTimer.stop());
 }
@@ -49,8 +49,8 @@ struct TestUIModule
 
 MainMenuModule::MainMenuModule(flecs::world& ecs)
 {
-    ecs.system<GameTime, const InputState>("MainMenu")
-        .each([](const flecs::iter &it, size_t, GameTime &timers, const InputState &input)
+    ecs.system<GameTickSources, const InputState>("MainMenu")
+        .each([](const flecs::iter &it, size_t, GameTickSources &timers, const InputState &input)
         {
             const auto &ecs = it.world();
 
@@ -76,8 +76,8 @@ MainMenuModule::MainMenuModule(flecs::world& ecs)
 
 PauseMenuModule::PauseMenuModule(flecs::world& ecs)
 {
-    ecs.system<GameTime, const InputState>("PauseMenu")
-       .each([](const flecs::iter &it, size_t, GameTime &timers, const InputState &input)
+    ecs.system<GameTickSources, const InputState>("PauseMenu")
+       .each([](const flecs::iter &it, size_t, GameTickSources &timers, const InputState &input)
        {
            const auto &ecs = it.world();
 
@@ -106,12 +106,12 @@ PauseMenuModule::PauseMenuModule(flecs::world& ecs)
 
 TestUIModule::TestUIModule(flecs::world& ecs)
 {
-    const flecs::entity tickTimer = ecs.get<GameTime>().mTickTimer;
+    const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
 
-    ecs.system<GameTime>("UpdateUI")
+    ecs.system<GameTickSources>("UpdateUI")
         .tick_source(tickTimer)
         .kind(flecs::OnUpdate)
-        .each([](const flecs::iter &it, size_t, GameTime &timers)
+        .each([](const flecs::iter &it, size_t, GameTickSources &timers)
         {
             const auto &ecs = it.world();
             if (auto input = ecs.try_get<InputState>(); input->WasEscapePressed)
@@ -199,10 +199,10 @@ bool Initialize(flecs::world &ecs)
     if (ImGui_ImplOpenGL3_Init("#version 330") == false)
         return false;
 
-    // Game Time
-    void(ecs.component<GameTime>()
+    // Game Tick Sources
+    void(ecs.component<GameTickSources>()
         .add(flecs::Singleton)
-        .emplace<GameTime>(GameTime{ecs}));
+        .emplace<GameTickSources>(GameTickSources{ecs}));
 
     // Init ECS
     RegisterSystems(ecs);
@@ -279,6 +279,19 @@ void ImportModules(flecs::world& ecs)
 
     void(ecs.import<EventsSampleScene>()
         .child_of<TestUIModule>());
+}
+
+GameTickSources::GameTickSources(const flecs::world& ecs)
+{
+    mTickTimer = ecs.timer("TickTimer");
+    mDayTimer = ecs.timer("DayTimer");
+    mDayTimer.stop();
+    mWeekTimer = ecs.timer("WeekTimer");
+    mWeekTimer.stop();
+    mMonthTimer = ecs.timer("MonthTimer");
+    mMonthTimer.stop();
+    mYearTimer = ecs.timer("YearTimer");
+    mYearTimer.stop();
 }
 
 void ProcessInput(const flecs::world &ecs)

@@ -157,7 +157,7 @@ void DoCreateCharacterBuilder(const flecs::world& ecs)
 
 CharactersModule::CharactersModule(const flecs::world& ecs)
 {
-    const flecs::entity tickTimer = ecs.get<GameTime>().mTickTimer;
+    const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
 
     DoCreateCharacterBuilder(ecs);
 
