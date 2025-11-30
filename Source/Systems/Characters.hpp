@@ -2,6 +2,8 @@
 #include <string>
 #include <flecs.h>
 
+#include "Components/Province.hpp"
+
 struct Title
 {
     std::string name;
@@ -20,37 +22,31 @@ struct Character
     }
 };
 
-struct Dynasty
-{
-    std::string name;
-};
-
 // -- RELATIONS --
-// Character to Title / Symmetric
-struct Ruler {};
 
-// Character to Title / Symmetric
+struct RuledBy {};
+
 struct Courtier {};
 
-// Character to Character / Symmetric
 struct MarriedTo {};
 
-// Character to Dynasty / Symmetric
 struct DynastyMember {};
 
-// Dynasty to Character / Symmetric
 struct DynastyHead {};
-
 
 // -- TAG --
 // Whether to show character details
 struct ShowCharacterDetails {};
 
-struct Male {};
+enum class Gender
+{
+    Male, Female
+};
 
-struct Female {};
-
-struct Adult {};
+enum class AgeClass
+{
+    Child, Adult
+};
 
 struct Player {};
 
@@ -61,15 +57,23 @@ struct CharactersModule
     explicit CharactersModule(const flecs::world &ecs);
 };
 
+struct CharacterQueries
+{
+    // Finds all characters with a title
+    flecs::query<const Character, const Title> qAllRulers;
+    // Finds all provinces under a title
+    flecs::query<const Province, const Title> qProvincesOfTitle;
+};
+
 void CreateKingdoms(const flecs::world &ecs, size_t count);
 
 void RenderCharacterOverviewWindow(
-    const flecs::world& ecs,
-    const flecs::query<const Character> &qRulers,
-    const flecs::query<> &qInRealm);
+    const flecs::world& ecs, const CharacterQueries& queries);
 
 void RenderCharacterDetailWindow(
     const flecs::world &ecs,
     flecs::entity characterEntity,
-    const flecs::query<>& qInRealm,
-    const Character& c);
+    flecs::entity titleEntity, const Character& c, const CharacterQueries& queries);
+
+flecs::entity BirthChildCharacter(const flecs::world& ecs, const Character& father, const Character& mother,
+                                  flecs::entity dynasty);

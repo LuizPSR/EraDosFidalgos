@@ -9,13 +9,22 @@
 #include "Game.hpp"
 #include "../Components/Province.hpp"
 
+#include "Components/Dynasty.hpp"
+// TODO: make random deterministic
+#include "Random.hpp"
+
 struct CharacterBuilder
 {
-    const flecs::world& ecs;
-    toml::array *dynastyNames;
-    toml::array *provinceNames;
-    toml::array *maleNames;
-    toml::array *femaleNames;
+    const flecs::world ecs;
+    toml::node_view<toml::node> dynastyNames;
+    toml::node_view<toml::node> provinceNames;
+    toml::node_view<toml::node> maleNames;
+    toml::node_view<toml::node> femaleNames;
+
+    std::string GenProvinceName() const;
+    std::string GenDynastyName() const;
+    std::string GenMaleName() const;
+    std::string GenFemaleName() const;
 
     flecs::entity CreateDynastyWithKingdomAndFamily(size_t index) const;
     flecs::entity CreateCharacter(
@@ -34,46 +43,83 @@ flecs::entity CharacterBuilder::CreateCharacter(
             .mName = char_name,
             .mMoney = 123,
             .mAgeDays = 20 * 360,
-        })
-        .add<DynastyMember>(dynasty_entity);
+        });
+
+    if (dynasty_entity.is_valid())
+        void(character.add<DynastyMember>(dynasty_entity));
+
     void(character.disable<ShowCharacterDetails>());
     if (isMale)
     {
-        void(character.add<Male>());
+        void(character.add(Gender::Male));
     } else
     {
-        void(character.add<Female>());
+        void(character.add(Gender::Female));
     }
 
     return character;
 }
 
+// TODO: cleanup the code below, because it's ugly
+
+std::string getRandomArrayElement(const toml::array *array)
+{
+    size_t index = Random::GetIntRange(0, array->size() - 1);
+    return std::string(*array->get_as<std::string>(index));
+}
+
+std::string CharacterBuilder::GenProvinceName() const
+{
+    return getRandomArrayElement(provinceNames["prefixes"].as_array())
+        + getRandomArrayElement(provinceNames["suffixes"].as_array());
+}
+
+std::string CharacterBuilder::GenDynastyName() const
+{
+    return getRandomArrayElement(dynastyNames["prefixes"].as_array())
+        + getRandomArrayElement(dynastyNames["suffixes"].as_array());
+}
+
+std::string CharacterBuilder::GenMaleName() const
+{
+    return getRandomArrayElement(maleNames["prefixes"].as_array())
+        + getRandomArrayElement(maleNames["infixes"].as_array())
+        + getRandomArrayElement(maleNames["suffixes"].as_array());
+}
+
+std::string CharacterBuilder::GenFemaleName() const
+{
+    return getRandomArrayElement(femaleNames["prefixes"].as_array())
+        + getRandomArrayElement(femaleNames["infixes"].as_array())
+        + getRandomArrayElement(femaleNames["suffixes"].as_array());
+}
+
 flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t index) const
 {
-    auto dName = dynastyNames->get_as<std::string>(index);
-    auto dynasty = ecs.entity().set<Dynasty>({ dName->get() });
+    auto dName = GenDynastyName();
 
-    auto kingdom = ecs.entity().set<Title>({ dName->get() + " Kingdom" });
+    auto dynasty = ecs.entity().set<Dynasty>({ dName });
 
-    auto pName = provinceNames->get_as<std::string>(index);
+    auto kingdom = ecs.entity().set<Title>({ dName + " Kingdom" });
+
     auto capital = ecs.entity()
-        .set<Province>({ dName->get() + " " + pName->get() })
+        .set<Province>({ dName + " " + GenProvinceName() })
         .add<InRealm>(kingdom);
 
     for (size_t i = 0; i < 9; i += 1)
     {
-        auto pName = provinceNames->get_as<std::string>(index + i);
         void(ecs.entity()
-            .set<Province>({ dName->get() + " " + pName->get() })
+            .set<Province>({ dName + " " + GenProvinceName() })
             .add<InRealm>(kingdom));
     }
 
-    auto rulerName = maleNames->get_as<std::string>(index);
-    auto ruler = CreateCharacter(rulerName->get(), dynasty, true)
-        .add<Ruler>(kingdom)
+    auto rulerName = GenMaleName();
+    auto ruler = CreateCharacter(rulerName, dynasty, true)
         .add<DynastyHead>(dynasty);
-    auto spouseName = femaleNames->get_as<std::string>(index);
-    auto spouse = CreateCharacter(spouseName->get(), dynasty, false)
+    void(kingdom.add<RuledBy>(ruler));
+
+    auto spouseName = GenFemaleName();
+    auto spouse = CreateCharacter(spouseName, dynasty, false)
         .add<MarriedTo>(ruler)
         .add<DynastyMember>(dynasty);
     void(ruler.add<MarriedTo>(spouse));
@@ -81,11 +127,29 @@ flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t i
     return dynasty;
 }
 
-// --- CharactersModule Implementation ---
+void DoCreateCharacterBuilder(const flecs::world& ecs)
+{
+    void(ecs.component<CharacterBuilder>()
+        .add(flecs::Singleton));
+
+    const auto path = std::filesystem::path(SDL_GetBasePath()) / "Assets" / "Names.toml";
+    static toml::table tbl = toml::parse_file(path.string());
+
+    ecs.component<CharacterBuilder>()
+        .emplace<CharacterBuilder>(CharacterBuilder {
+            .ecs = ecs.get_world(),
+            .dynastyNames = tbl["dynasties"]["names"],
+            .provinceNames = tbl["provinces"]["names"],
+            .maleNames = tbl["characters"]["male"]["names"],
+            .femaleNames = tbl["characters"]["female"]["names"],
+        });
+}
 
 CharactersModule::CharactersModule(const flecs::world& ecs)
 {
     const flecs::entity tickTimer = ecs.get<GameTimers>().mTickTimer;
+
+    DoCreateCharacterBuilder(ecs);
 
     void(ecs.component<ShowCharacterDetails>()
         .add(flecs::Trait)
@@ -95,62 +159,49 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         .add(flecs::With, ecs.component<ShowCharacterDetails>()));
 
     // Relationship Tags
-    void(ecs.component<Ruler>().add(flecs::Acyclic).add(flecs::Symmetric));
-    void(ecs.component<Courtier>().add(flecs::Symmetric));
-    void(ecs.component<MarriedTo>().add(flecs::Symmetric));
-    void(ecs.component<DynastyMember>().add(flecs::Symmetric));
+    void(ecs.component<RuledBy>().add(flecs::Exclusive).add(flecs::Acyclic).add(flecs::Transitive));
+    void(ecs.component<MarriedTo>().add(flecs::Exclusive).add(flecs::Symmetric));
+    void(ecs.component<Courtier>().add(flecs::Exclusive));
+    void(ecs.component<DynastyMember>().add(flecs::Exclusive));
     void(ecs.component<DynastyHead>()
         .add(flecs::With, ecs.component<DynastyMember>())
+        .add(flecs::Exclusive)
         .add(flecs::Symmetric));
-    void(ecs.component<InRealm>().add(flecs::Transitive)); // Used for hierarchy
+    void(ecs.component<InRealm>().add(flecs::Exclusive).add(flecs::Transitive));
 
     // 3. Initialize Cached Queries
 
     // --- Cached Queries Declarations ---
 
-    // Query to find all characters who are a Ruler of any Title
-    flecs::query<const Character> qRulers = ecs.query_builder<const Character>()
-        .with<Ruler>(flecs::Wildcard)
-        .build();
-
-    // Query to find all Characters who are members of a specific Dynasty
-    flecs::query<const Character> q_dynasty_members;
-
-    // Query to find all Titles/Provinces that belong to a larger Title (e.g., a Kingdom)
-    flecs::query<> qInRealm = ecs.query_builder<>()
-        .with<InRealm>("$who")
-        .build();
+    CharacterQueries queries = {
+        .qAllRulers = ecs.query_builder<const Character,  const Title>("qAllRulers")
+            .term_at(1).src("$title")
+            .with<RuledBy>("$this").src("$title")
+            .build(),
+        .qProvincesOfTitle = ecs.query_builder<const Province, const Title>("qProvincesOfTitle")
+            .term_at(1).src("$title")
+            .with<InRealm>("$title").src("$this")
+            .build(),
+    };
 
     ecs.system<>()
         .tick_source(tickTimer)
-        .run([qRulers, qInRealm](const flecs::iter &it)
+        .run([queries](const flecs::iter &it)
         {
             const auto &ecs = it.world();
-            RenderCharacterOverviewWindow(ecs, qRulers, qInRealm);
+            RenderCharacterOverviewWindow(ecs, queries);
         });
 }
 
 void CreateKingdoms(const flecs::world &ecs, size_t count)
 {
-    const auto path = std::filesystem::path(SDL_GetBasePath()) / "Assets" / "Names.toml";
-    toml::table tbl = toml::parse_file(path.string());
-
-    auto builder = CharacterBuilder {
-        .ecs = ecs,
-        .dynastyNames = tbl["dynasties"]["names"].as_array(),
-        .provinceNames = tbl["provinces"]["names"].as_array(),
-        .maleNames = tbl["characters"]["male"]["names"].as_array(),
-        .femaleNames = tbl["characters"]["female"]["names"].as_array(),
-    };
+    const auto &builder = ecs.get<CharacterBuilder>();
     for (size_t i = 0; i < count; i += 1)
         void(builder.CreateDynastyWithKingdomAndFamily(i));
 }
 
 // 1. Renders the main window listing all rulers.
-void RenderCharacterOverviewWindow(
-    const flecs::world& ecs,
-    const flecs::query<const Character> &qRulers,
-    const flecs::query<> &qInRealm)
+void RenderCharacterOverviewWindow(const flecs::world& ecs, const CharacterQueries& queries)
 {
     if (ImGui::Begin("Character Overview"))
     {
@@ -161,16 +212,14 @@ void RenderCharacterOverviewWindow(
         ImGui::TableNextColumn(); ImGui::Text("Action");
 
         // Iterate through all Rulers
-        qRulers
-            .each([&](flecs::entity ruler, const Character& c)
+        queries.qAllRulers
+            .each([&](flecs::iter it, size_t i, const Character &c, const Title &title)
             {
+                flecs::entity ruler = it.entity(i), titleEntity = it.get_var("title");
 
                 // Get the primary Title this character rules over
                 // We reuse q_ruled_titles, scoped to the current ruler entity.
-                std::string title_name = "No Title";
-                auto title = ruler.target_for<Title>(ecs.component<Ruler>());
-                if (title.is_valid())
-                    title_name = title.get<Title>().name;
+                std::string title_name = title.name;
 
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn(); ImGui::Text("%s", c.mName.c_str());
@@ -188,7 +237,7 @@ void RenderCharacterOverviewWindow(
                         void(ruler.enable<ShowCharacterDetails>());
                 }
                 if (showDetails)
-                    RenderCharacterDetailWindow(ecs, ruler, qInRealm, c);
+                    RenderCharacterDetailWindow(ecs, ruler, titleEntity, c, queries);
             });
 
         ImGui::EndTable();
@@ -200,12 +249,11 @@ void RenderCharacterOverviewWindow(
 void RenderCharacterDetailWindow(
     const flecs::world &ecs,
     const flecs::entity characterEntity,
-    const flecs::query<>& qInRealm,
-    const Character& c)
+    const flecs::entity titleEntity,
+    const Character& c, const CharacterQueries& queries)
 {
     const std::string window_name = c.mName + " - Details";
     bool open = characterEntity.enabled<ShowCharacterDetails>();
-
 
     if (ImGui::Begin(window_name.c_str(), &open))
     {
@@ -233,29 +281,17 @@ void RenderCharacterDetailWindow(
 
         // --- TITLES & PROVINCES (Hierarchy Traversal) ---
         // Reuse q_ruled_titles to find the direct holdings
-        if (auto title_entity = characterEntity.target_for<Title>(ecs.component<Ruler>()))
+
+        const auto &title = titleEntity.get<Title>();
+        if (ImGui::TreeNodeEx(title.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
         {
-            if (const auto* t = title_entity.try_get<Title>();
-                ImGui::TreeNodeEx(t->name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
-            {
-                // Find all Vassal Titles and Provinces owned by this Title
-                qInRealm.set_var("who", title_entity)
-                    .each([&](flecs::entity holding_entity) {
-                        // Check if it's a Province
-                        auto p = holding_entity.try_get<Province>();
-                        if (p) {
-                            ImGui::BulletText("Province: %s (Income: $%.2lf)", p->name.c_str(), p->IncomeFloat());
-                        }
-
-                        // Check if it's a Vassal Title (Title to Title: MemberOf)
-                        if (auto *vassal_t = holding_entity.try_get<Title>()) {
-                            ImGui::BulletText("Vassal Title: %s", vassal_t->name.c_str());
-                            // Note: You might want to recursively check who rules this vassal title here.
-                        }
-                    });
-
-                ImGui::TreePop();
-            }
+            queries.qProvincesOfTitle
+                .set_var("title", titleEntity)
+                .each([&](const Province &province, const Title&)
+                {
+                    ImGui::BulletText("Province: %s (Income: $%.2lf)", province.name.c_str(), province.IncomeFloat());
+                });
+            ImGui::TreePop();
         }
     }
 
@@ -265,4 +301,12 @@ void RenderCharacterDetailWindow(
     }
 
     ImGui::End();
+}
+
+flecs::entity BirthChildCharacter(const flecs::world& ecs, const Character& father, const Character& mother, flecs::entity dynasty)
+{
+    const auto &builder = ecs.get<CharacterBuilder>();
+    bool isMale = Random::GetIntRange(0, 1);
+    auto name = isMale ? builder.GenMaleName() : builder.GenFemaleName();
+    return builder.CreateCharacter(name, dynasty, isMale);
 }

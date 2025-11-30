@@ -21,7 +21,7 @@ void DoCharacterBirthSystems(const flecs::world& ecs, const flecs::timer &tickTi
     // Starts pregnancy events for married couples
     ecs.observer<const Character, const GameTime>()
         .with(ecs.component<MarriedTo>(), flecs::Wildcard)
-        .with(ecs.component<Female>())
+        .with(Gender::Female)
         .event(flecs::Monitor)
         .each([](flecs::iter &it, size_t i, const Character &c, const GameTime &gameTime)
         {
@@ -35,6 +35,7 @@ void DoCharacterBirthSystems(const flecs::world& ecs, const flecs::timer &tickTi
                     .set<PregnancySaga>({
                         .father = spouseEntity,
                         .mother = characterEntity,
+                        .dynasty = characterEntity.target<DynastyMember>(),
                     }));
             } else if (it.event() == flecs::OnRemove)
             {
@@ -59,11 +60,13 @@ void DoCharacterBirthSystems(const flecs::world& ecs, const flecs::timer &tickTi
             {
             case PregnancySaga::Attempt:
                 {
-                    // TODO: make so it can fail
-                    saga.stage = PregnancySaga::Announce;
+                    // TODO: make random deterministic
+                    if (Random::GetFloat() < 0.2f)
+                    {
+                        saga.stage = PregnancySaga::Announce;
+                    }
                     void(entity.remove<PausesGame>()
                         .remove<FiredEvent>()
-                        // TODO: add randomness here
                         .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30)));
                 }
                 break;
@@ -78,10 +81,11 @@ void DoCharacterBirthSystems(const flecs::world& ecs, const flecs::timer &tickTi
                         if (ImGui::Button("Close"))
                         {
                             saga.stage = PregnancySaga::Birth;
+                            // TODO: make random deterministic
+                            int variation = Random::GetIntRange(30, 60);
                             void(entity.remove<PausesGame>()
                                 .remove<FiredEvent>()
-                                // TODO: add randomness here
-                                .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30 * 8)));
+                                .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30 * 7 + variation)));
                         }
                     }
                     ImGui::End();
@@ -89,15 +93,20 @@ void DoCharacterBirthSystems(const flecs::world& ecs, const flecs::timer &tickTi
                 }
             case PregnancySaga::Birth:
                 {
+                    saga.child = BirthChildCharacter(it.world(), *father, *mother, saga.dynasty);
+                    saga.stage = PregnancySaga::BirthAnnounce;
+                }
+            case PregnancySaga::BirthAnnounce:
+                {
                     void(entity.add<PausesGame>());
-                    auto name = "Evento - Gravidez##" + std::to_string(entity.id());
+                    auto name = "Evento - Nascimento##" + std::to_string(entity.id());
+                    const auto *child = saga.child.try_get<Character>();
                     CenterNextImGuiWindow();
                     if (ImGui::Begin(name.data()))
                     {
-                       ImGui::Text("O filho de %s e %s nasceu.", father->mName.data(), mother->mName.data());
+                       ImGui::Text("O filho de %s e %s nasceu: %s", father->mName.data(), mother->mName.data(), child ? child->mName.data() : nullptr);
                        if (ImGui::Button("Close"))
                        {
-                           // TODO: spawn child here
                            void(entity.destruct());
                        }
                     }
@@ -112,7 +121,7 @@ void DoAdultMarriageSystems(const flecs::world& ecs, flecs::timer)
 {
     // Adds marriage planning to unmarried adults
     ecs.observer<const Character, const GameTime>()
-        .with<Adult>()
+        .with<AgeClass>(AgeClass::Adult)
         .without(ecs.component<MarriedTo>(), flecs::Wildcard)
         .event(flecs::Monitor)
         .each([](flecs::iter &it, size_t i, const Character &c,  const GameTime &gameTime)
@@ -242,18 +251,22 @@ void DoSamplePopupSystem(const flecs::world& ecs, flecs::timer tickTimer)
 
 void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTimers &timers)
 {
+    auto qProvinceRuler = ecs.query_builder<Character>("qProvinceRuler")
+        .with<RuledBy>("$this").src("$title")
+        .with<InRealm>("$title").src("$province")
+        .build();
+
     ecs.system<Province, const GameTime>()
         .tick_source(timers.mDayTimer)
-        .each([](flecs::iter &it, size_t i, Province &province, const GameTime &gameTime)
+        .each([=](flecs::iter &it, size_t i, Province &province, const GameTime &gameTime)
         {
             size_t days = gameTime.CountDayChanges();
-            // TODO: see if there is a cleaner way to reference the ruler
-            flecs::entity entity = it.entity(i);
-            flecs::entity title = entity.target<InRealm>();
-            flecs::entity ruler = title.target<Ruler>();
-
-            auto &character = ruler.get_mut<Character>();
-            character.mMoney += province.income * days;
+            qProvinceRuler
+                .set_var("province", it.entity(i))
+                .each([&](Character &character)
+                {
+                    character.mMoney += province.income * days;
+                });
 
             // TODO: pay taxes to higher lieges
         });
@@ -266,8 +279,8 @@ void DoCharacterAgingSystem(const flecs::world& ecs, const GameTimers& timers)
         .each([](flecs::entity e, Character &character, const GameTime &gameTime)
         {
             character.mAgeDays += gameTime.CountDayChanges();
-            if (!e.has<Adult>() && character.mAgeDays > 16 * 360)
-                void(e.add<Adult>());
+            if (!e.has(AgeClass::Adult) && character.mAgeDays > 16 * 360)
+                void(e.add(AgeClass::Adult));
         });
 }
 
