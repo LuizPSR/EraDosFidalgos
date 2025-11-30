@@ -8,6 +8,41 @@ O flecs permite monitorar o estado do sistema na [interface web](https://www.fle
 Basta estar com o jogo rodando, e a interface se conecta a ele no endereço localhost. Assim,
 a interface também não é visível fora da máquina local.
 
+## Queries
+
+As queries do flecs têm que ser construidas fora dos sistemas, também por causa da
+imutabilidade do flecs::World. Elas podem atravessar grafos:
+
+```c++
+void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTimers &timers)
+{
+    auto qProvinceRuler = ecs.query_builder<Character>("qProvinceRuler")
+        .with<RuledBy>("$this").src("$title")
+        .with<InRealm>("$title").src("$province")
+        .build();
+
+    ecs.system<Province, const GameTime>()
+        .tick_source(timers.mDayTimer)
+        .each([=](flecs::iter &it, size_t i, Province &province, const GameTime &gameTime)
+        {
+            size_t days = gameTime.CountDayChanges();
+            qProvinceRuler
+                .set_var("province", it.entity(i))
+                .each([&](Character &character)
+                {
+                    character.mMoney += province.income * days;
+                });
+        });
+}
+```
+
+Na interface Web é possível construir queries e obter o código C++ delas. Na linguagem
+de query do flecs, essa query seria:
+
+```
+Character, RuledBy($title, $this), InRealm($province, $title)
+```
+
 ## Sistemas
 
 ### Registro

@@ -251,18 +251,22 @@ void DoSamplePopupSystem(const flecs::world& ecs, flecs::timer tickTimer)
 
 void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTimers &timers)
 {
+    auto qProvinceRuler = ecs.query_builder<Character>("qProvinceRuler")
+        .with<RuledBy>("$this").src("$title")
+        .with<InRealm>("$title").src("$province")
+        .build();
+
     ecs.system<Province, const GameTime>()
         .tick_source(timers.mDayTimer)
-        .each([](flecs::iter &it, size_t i, Province &province, const GameTime &gameTime)
+        .each([=](flecs::iter &it, size_t i, Province &province, const GameTime &gameTime)
         {
             size_t days = gameTime.CountDayChanges();
-            // TODO: see if there is a cleaner way to reference the ruler
-            flecs::entity entity = it.entity(i);
-            flecs::entity title = entity.target<InRealm>();
-            flecs::entity ruler = title.target<RuledBy>();
-
-            auto &character = ruler.get_mut<Character>();
-            character.mMoney += province.income * days;
+            qProvinceRuler
+                .set_var("province", it.entity(i))
+                .each([&](Character &character)
+                {
+                    character.mMoney += province.income * days;
+                });
 
             // TODO: pay taxes to higher lieges
         });
