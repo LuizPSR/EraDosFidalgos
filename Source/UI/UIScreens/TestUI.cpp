@@ -177,7 +177,7 @@ void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
 
         // Título interno com ícone de coroa
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // Usar fonte padrão
-        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "👑 Dashboard do Monarca");
+        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), " - Dashboard do Monarca - ");
         ImGui::PopFont();
         ImGui::Separator();
         ImGui::Spacing();
@@ -298,7 +298,7 @@ void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
 
         // Poder dos Estados
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 200, 255, 255));
-        ImGui::Text("⚖ Poder dos Estados");
+        ImGui::Text("Poder dos Estados");
         ImGui::PopStyleColor();
         
         if (estatePowers) {

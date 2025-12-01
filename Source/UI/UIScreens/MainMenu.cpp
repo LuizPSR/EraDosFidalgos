@@ -88,7 +88,7 @@ void MainMenuModule::ShowMainMenu(const flecs::world& ecs, GameTickSources& tick
         drawList->AddRectFilled(
             screenPos,
             ImVec2(screenPos.x + screenSize.x, screenPos.y + screenSize.y),
-            IM_COL32(0, 0, 0, 128)  // Overlay preto semi-transparente
+            IM_COL32(0, 0, 0, 64)  // Overlay preto semi-transparente
         );
     } else {
         // Fallback: usar o gradiente azul medieval original
@@ -119,12 +119,13 @@ void MainMenuModule::ShowMainMenu(const flecs::world& ecs, GameTickSources& tick
         }
     }
 
-    // Resto do código do menu (inalterado)...
+    // Resto do código do menu
     const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    const ImVec2 menuPosition = ImVec2(center.x, screenPos.y + screenSize.y * 0.80f);
 
     // Configurar a janela do menu
-    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(menuPosition, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(460, 200), ImGuiCond_Always);
 
     // Estilo para a janela do menu
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
@@ -152,8 +153,8 @@ void MainMenuModule::ShowMainMenu(const flecs::world& ecs, GameTickSources& tick
         ImGui::Spacing();
 
         // Botão START
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
-        if (ImGui::Button("START", ImVec2(200, 50))) {
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 250) * 0.5f);
+        if (ImGui::Button("START", ImVec2(250, 38))) {
             auto mainMenuEntity = ecs.entity<MainMenuModule>();
             auto testUIEntity = GetEntityByName(ecs, "TestUIModule");
 
@@ -168,13 +169,13 @@ void MainMenuModule::ShowMainMenu(const flecs::world& ecs, GameTickSources& tick
         ImGui::Spacing();
 
         // Botão QUIT
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 200) * 0.5f);
-        if (ImGui::Button("QUIT", ImVec2(200, 50)) || input.WasEscapePressed) {
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 250) * 0.5f);
+        if (ImGui::Button("QUIT", ImVec2(250, 38)) || input.WasEscapePressed) {
             ecs.quit();
         }
 
         // Versão do jogo no rodapé
-        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 30);
+        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 45);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize("v0.1.0 Alpha").x) * 0.5f);
         ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 0.7f), "v0.1.0 Alpha");
     }
