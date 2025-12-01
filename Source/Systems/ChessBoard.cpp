@@ -48,10 +48,11 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
         .tick_source(tickTimer)
         .each([](flecs::entity entity, const Province &province, const Title &title, const Character &character)
         {
+            bool open = true;
             const auto windowTitle = "Província Selecionada##" + std::to_string(entity.id());
             const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
             ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2{0.5f, 0.5f});
-            if (ImGui::Begin(windowTitle.data()))
+            if (ImGui::Begin(windowTitle.data(), &open))
             {
                 ImGui::Text("Nome: %s", province.name.data());
                 ImGui::Text("Parte de: %s", title.name.data());
@@ -60,6 +61,7 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
                 ImGui::Text("\t%0.2f gold", character.mMoney * 0.01f);
             }
             ImGui::End();
+            if (!open) void(entity.remove<ShowProvinceDetails>());
         });
 
     // void(ecs.system<ChessBoard, const Camera, Renderer, const Window>("Render3DScene")
