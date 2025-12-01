@@ -28,14 +28,16 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
             if (input.Clicked) void(entity.add<ShowProvinceDetails>());
         });
 
-    ecs.system<const Province>("HoverProvinceName")
+    ecs.system<const Province, const Title>("HoverProvinceName")
+        .term_at(1).src("$title")
         .with<Hovered>()
+        .with<InRealm>("$title")
         .tick_source(tickTimer)
-        .each([](const Province &province)
+        .each([](const Province &province, const Title &title)
         {
             if (ImGui::GetIO().WantCaptureMouse) return;
             ImGui::BeginTooltip();
-            ImGui::Text("%s (%zu, %zu)", province.name.data(), province.mPosX, province.mPosY);
+            ImGui::Text("%s - %s (%zu, %zu)", province.name.data(), title.name.data(), province.mPosX, province.mPosY);
             ImGui::EndTooltip();
         });
 
@@ -91,18 +93,6 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
             ImGui::Text("Mouse Position (World): (%.1f, %.1f, %.1f)", mouseWorldPos.x, mouseWorldPos.y, mouseWorldPos.z);
             ImGui::End();
         }));
-
-    void(ecs.prefab("Active").add<ChessBoard>());
-}
-
-void ChessBoardScene::Start(const flecs::entity& e)
-{
-    void(e.is_a(e.lookup("Active")));
-}
-
-void ChessBoardScene::Stop(const flecs::entity& e)
-{
-    void(e.remove(flecs::IsA, e.lookup("Active")));
 }
 
 void ChessBoard::Draw(Renderer& renderer, const Camera &camera, const Window &window)

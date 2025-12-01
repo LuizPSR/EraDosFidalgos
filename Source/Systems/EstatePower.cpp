@@ -71,7 +71,8 @@ void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers
         {
             void(entity.add<PausesGame>());
 
-            std::string title = "Estate Event##" + std::to_string(entity.id());
+            std::string title = "Evento de Estado##" + std::to_string(entity.id());
+            ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Appearing);
             if (ImGui::Begin(title.data()))
             {
                 ImGui::TextWrapped("%s", event.mMessage.data());
@@ -103,15 +104,15 @@ void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers
 
                     if (ImGui::BeginItemTooltip())
                     {
-                        ImGui::Text("Cost: %.2f", choice.FloatCost());
+                        ImGui::Text("Custo: %.2f", choice.FloatCost());
                         for (const auto &[estate, change]: choice.mPowerChanges)
                         {
                             std::string estateString;
                             switch (estate)
                             {
-                            case SocialEstate::Commoners: estateString = "Commoners"; break;
-                            case SocialEstate::Nobility: estateString = "Nobility"; break;
-                            case SocialEstate::Clergy: estateString = "Clergy"; break;
+                            case SocialEstate::Commoners: estateString = "Plebe"; break;
+                            case SocialEstate::Nobility: estateString = "Nobreza"; break;
+                            case SocialEstate::Clergy: estateString = "Clero"; break;
                             }
                             ImGui::Text("%s: %d", estateString.data(), change);
                         }

@@ -129,16 +129,6 @@ void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
         SDL_GetRelativeMouseState(&mPos.x, &mPos.y);
         ImGui::Text("Mouse Relative: %.1f %.1f", mPos.x, mPos.y);
 
-        static bool chessboardActive = false;
-        if (ImGui::Checkbox("Chessboard", &chessboardActive)) {
-            auto chessboardEntity = ecs.entity<ChessBoardScene>();
-            if (!chessboardActive) {
-                ChessBoardScene::Stop(chessboardEntity.disable());
-            } else {
-                ChessBoardScene::Start(chessboardEntity.enable());
-            }
-        }
-
         static bool showDemo = false;
         ImGui::Checkbox("Show ImGUI Demo", &showDemo);
         if (showDemo) ImGui::ShowDemoWindow();

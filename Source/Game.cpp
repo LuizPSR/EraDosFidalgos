@@ -136,7 +136,7 @@ void ImportModules(flecs::world& ecs) {
     // Game Systems - VOLTAR AO FORMATO ORIGINAL
     void(ecs.import<SoundModule>().disable());
     void(ecs.import<CharactersModule>().child_of(testUI));
-    void(ecs.import<ChessBoardScene>().child_of(testUI).disable());
+    void(ecs.import<ChessBoardScene>().child_of(testUI));
     void(ecs.import<EventsSampleScene>().child_of(testUI));
 }
 

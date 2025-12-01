@@ -474,19 +474,20 @@ void CreateKingdoms(const flecs::world &ecs)
 // 1. Renders the main window listing all rulers.
 void RenderCharacterOverviewWindow(const flecs::world& ecs, const CharacterQueries& queries)
 {
-    if (ImGui::Begin("Character Overview"))
+    if (ImGui::Begin("Resumo de Personagens"))
     {
         ImGui::BeginTable("RulerListCols", 3);
         ImGui::TableNextRow();
-        ImGui::TableNextColumn(); ImGui::Text("Ruler Name");
-        ImGui::TableNextColumn(); ImGui::Text("Primary Title");
-        ImGui::TableNextColumn(); ImGui::Text("Action");
+        ImGui::TableNextColumn(); ImGui::Text("Nome do Rei");
+        ImGui::TableNextColumn(); ImGui::Text("Título Primário");
+        ImGui::TableNextColumn(); ImGui::Text("Ação");
 
         // Iterate through all Rulers
         queries.qAllRulers
             .each([&](flecs::iter it, size_t i, const Character &c, const Title &title)
             {
                 flecs::entity ruler = it.entity(i), titleEntity = it.get_var("title");
+                if (ruler == it.world().entity<Player>()) return;
 
                 // Get the primary Title this character rules over
                 // We reuse q_ruled_titles, scoped to the current ruler entity.
@@ -532,7 +533,7 @@ void RenderCharacterDetailWindow(
 
         // --- BASIC INFO & DYNASTY ---
         if (ecs.entity<Player>() == characterEntity)
-            ImGui::Text("Player Character");
+            ImGui::Text("Personagem do Jogador");
 
         flecs::entity dynasty_target = characterEntity.target<DynastyMember>();
         auto *d = dynasty_target.try_get<Dynasty>();

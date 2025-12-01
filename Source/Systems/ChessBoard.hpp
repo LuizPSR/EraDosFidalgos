@@ -11,8 +11,6 @@
 struct ChessBoardScene
 {
     explicit ChessBoardScene(const flecs::world &ecs);
-    static void Start(const flecs::entity &e);
-    static void Stop(const flecs::entity &e);
 };
 
 struct ChessBoard
