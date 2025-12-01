@@ -1,7 +1,11 @@
+
 #include "TestUI.hpp"
 #include <imgui.h>
+
+#include "Components/Dynasty.hpp"
 #include "Systems/ChessBoard.hpp"
 #include "Systems/Characters.hpp"
+#include "Systems/EstatePower.hpp" // Adicionar este include
 #include "Renderer/Renderer.hpp"
 #include "Renderer/Texture.hpp"
 
@@ -47,6 +51,38 @@ static ImTextureID TextureToImTextureID(Texture* texture) {
     return (ImTextureID)(intptr_t)texture->GetTextureID();
 }
 
+// Função auxiliar para obter informações do jogador
+static const Character* GetPlayerCharacter(const flecs::world& ecs) {
+    flecs::entity playerEntity = ecs.entity<Player>();
+    if (playerEntity.is_valid()) {
+        return playerEntity.try_get<Character>();
+    }
+    return nullptr;
+}
+
+// Função auxiliar para obter o título do jogador
+static flecs::entity GetPlayerTitle(const flecs::world& ecs) {
+    flecs::entity playerEntity = ecs.entity<Player>();
+    if (playerEntity.is_valid()) {
+        return playerEntity.target<RulerOf>();
+    }
+    return flecs::entity::null();
+}
+
+// Função auxiliar para obter o poder dos estados
+static const EstatePowers* GetEstatePowers(const flecs::world& ecs) {
+    return ecs.try_get<EstatePowers>();
+}
+
+// Função auxiliar para formatar o ID do personagem em cores baseado no estado
+static ImU32 GetPowerColor(int power) {
+    if (power > 50) return IM_COL32(50, 200, 50, 255);     // Verde - muito favorável
+    if (power > 20) return IM_COL32(150, 200, 50, 255);    // Verde-amarelo - favorável
+    if (power > -20) return IM_COL32(200, 200, 50, 255);   // Amarelo - neutro
+    if (power > -50) return IM_COL32(200, 150, 50, 255);   // Laranja - desfavorável
+    return IM_COL32(200, 50, 50, 255);                     // Vermelho - muito desfavorável
+}
+
 TestUIModule::TestUIModule(flecs::world& ecs) {
     const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
 
@@ -73,37 +109,6 @@ void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImVec2 screenSize = viewport->Size;
     ImVec2 screenPos = viewport->Pos;
-
-    // TODO: replace this with something that won't draw over map
-    // // Desenhar fundo gradiente usando ImDrawList
-    // ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-    //
-    // // Gradiente azul medieval
-    // ImU32 color1 = IM_COL32(10, 15, 40, 255);    // Azul muito escuro
-    // ImU32 color2 = IM_COL32(30, 45, 90, 255);    // Azul escuro
-    // ImU32 color3 = IM_COL32(60, 80, 120, 255);   // Azul médio
-    //
-    // // Gradiente vertical
-    // drawList->AddRectFilledMultiColor(
-    //     screenPos,
-    //     ImVec2(screenPos.x + screenSize.x, screenPos.y + screenSize.y * 0.5f),
-    //     color1, color1, color2, color2
-    // );
-    //
-    // drawList->AddRectFilledMultiColor(
-    //     ImVec2(screenPos.x, screenPos.y + screenSize.y * 0.5f),
-    //     ImVec2(screenPos.x + screenSize.x, screenPos.y + screenSize.y),
-    //     color2, color2, color3, color3
-    // );
-    //
-    // // Adicionar padrão de textura sutil (linhas diagonais)
-    // for (int i = -screenSize.y; i < screenSize.x + screenSize.y; i += 20) {
-    //     drawList->AddLine(
-    //         ImVec2(screenPos.x + i, screenPos.y),
-    //         ImVec2(screenPos.x + i - screenSize.y, screenPos.y + screenSize.y),
-    //         IM_COL32(255, 255, 255, 10)
-    //     );
-    // }
 
     // Carregar a textura do personagem na primeira execução
     if (!characterTextureLoaded) {
@@ -140,84 +145,228 @@ void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
     }
     ImGui::End();
 
-    // 2. Agora a janela popup do personagem no canto inferior esquerdo
+    // 2. Janela popup do personagem no canto inferior esquerdo
     // Posicionar no canto inferior esquerdo
-    ImVec2 windowPos = ImVec2(20, screenSize.y - 220); // 20px da esquerda, 220px do fundo
-    ImVec2 windowSize = ImVec2(150, 210); // Tamanho fixo
+    ImVec2 windowPos = ImVec2(20, screenSize.y - 280); // Aumentei a altura para 280px
+    ImVec2 windowSize = ImVec2(340, 260); // Aumentei o tamanho para 320x260
 
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
-    // Estilo para a janela do personagem (transparente, sem bordas)
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.3f)); // Fundo semi-transparente
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.8f, 0.6f, 0.2f, 0.5f));   // Borda dourada sutil
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
+    // Estilo para a janela do personagem
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.05f, 0.10f, 0.85f)); // Fundo azul escuro semi-transparente
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.8f, 0.6f, 0.2f, 0.8f));       // Borda dourada
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.8f, 1.0f));         // Texto creme
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12, 12));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 6));
 
-    if (ImGui::Begin("Character Preview", nullptr,
+    if (ImGui::Begin("Character Dashboard", nullptr,
                      ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoCollapse |
                      ImGuiWindowFlags_NoTitleBar |
                      ImGuiWindowFlags_NoScrollbar)) {
 
-        // Título interno
-        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Personagem");
+        // Obter informações do jogador
+        const Character* playerChar = GetPlayerCharacter(ecs);
+        flecs::entity playerTitleEntity = GetPlayerTitle(ecs);
+        const Title* playerTitle = playerTitleEntity.is_valid() ? playerTitleEntity.try_get<Title>() : nullptr;
+        const EstatePowers* estatePowers = GetEstatePowers(ecs);
+
+        // Título interno com ícone de coroa
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // Usar fonte padrão
+        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "👑 Dashboard do Monarca");
+        ImGui::PopFont();
         ImGui::Separator();
         ImGui::Spacing();
 
-        // Área para a imagem do personagem
-        ImVec2 imageSize = ImVec2(100, 120); // Tamanho fixo para a imagem
-        ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-        ImVec2 windowCenter = ImVec2(
-            cursorPos.x + (ImGui::GetWindowWidth() - imageSize.x) * 0.5f,
-            cursorPos.y
-        );
+        // Layout em duas colunas
+        ImGui::Columns(2, "dashboardColumns", true);
+        ImGui::SetColumnWidth(0, 120); // Coluna para a imagem
 
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
-        ImTextureID charTextureID = TextureToImTextureID(characterTexture);
-
-        if (charTextureID != (ImTextureID)0) {
-            // Desenhar a imagem do personagem centralizada
-            drawList->AddImage(
-                charTextureID,
-                windowCenter,
-                ImVec2(windowCenter.x + imageSize.x, windowCenter.y + imageSize.y),
-                ImVec2(0, 0),
-                ImVec2(1, 1)
-            );
-        } else {
-            // Fallback: desenhar um placeholder
-            drawList->AddRectFilled(
-                windowCenter,
-                ImVec2(windowCenter.x + imageSize.x, windowCenter.y + imageSize.y),
-                IM_COL32(50, 50, 80, 255)
+        // --- COLUNA 1: IMAGEM DO PERSONAGEM ---
+        if (characterTextureLoaded) {
+            ImVec2 imageSize = ImVec2(100, 120);
+            ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+            ImVec2 imagePos = ImVec2(
+                cursorPos.x + (ImGui::GetColumnWidth() - imageSize.x) * 0.5f,
+                cursorPos.y
             );
 
-            // Desenhar um ícone de personagem simples
-            drawList->AddCircle(
-                ImVec2(windowCenter.x + imageSize.x * 0.5f, windowCenter.y + imageSize.y * 0.4f),
-                imageSize.x * 0.2f,
-                IM_COL32(200, 200, 255, 255),
-                0, 2.0f
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            ImTextureID charTextureID = TextureToImTextureID(characterTexture);
+
+            // Moldura dourada para a imagem
+            drawList->AddRect(
+                imagePos,
+                ImVec2(imagePos.x + imageSize.x, imagePos.y + imageSize.y),
+                IM_COL32(180, 150, 50, 255),
+                6.0f,
+                0,
+                2.0f
             );
 
-            drawList->AddRectFilled(
-                ImVec2(windowCenter.x + imageSize.x * 0.4f, windowCenter.y + imageSize.y * 0.6f),
-                ImVec2(windowCenter.x + imageSize.x * 0.6f, windowCenter.y + imageSize.y * 0.8f),
-                IM_COL32(200, 200, 255, 255)
-            );
+            if (charTextureID != (ImTextureID)0) {
+                drawList->AddImage(
+                    charTextureID,
+                    imagePos,
+                    ImVec2(imagePos.x + imageSize.x, imagePos.y + imageSize.y),
+                    ImVec2(0, 0),
+                    ImVec2(1, 1)
+                );
+            } else {
+                // Placeholder
+                drawList->AddRectFilled(
+                    imagePos,
+                    ImVec2(imagePos.x + imageSize.x, imagePos.y + imageSize.y),
+                    IM_COL32(40, 40, 60, 255)
+                );
+                drawList->AddText(
+                    ImVec2(imagePos.x + 25, imagePos.y + 40),
+                    IM_COL32(180, 180, 220, 255),
+                    "Personagem"
+                );
+            }
 
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + imageSize.y);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + imageSize.y + 10);
+        }
+
+        // Nome do personagem centrado abaixo da imagem
+        if (playerChar) {
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(220, 220, 180, 255));
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetColumnWidth() - ImGui::CalcTextSize(playerChar->mName.c_str()).x) * 0.5f);
+            ImGui::Text("%s", playerChar->mName.c_str());
+            ImGui::PopStyleColor();
+        }
+
+        ImGui::NextColumn();
+
+        // --- COLUNA 2: INFORMAÇÕES DETALHADAS ---
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(220, 220, 200, 255));
+
+        // Informações do Personagem
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 200, 255, 255));
+        ImGui::Text("Informações Pessoais");
+        ImGui::PopStyleColor();
+        
+        if (playerChar) {
+            // Idade
+            uint64_t ageYears = playerChar->mAgeDays / 360;
+            uint64_t ageMonths = (playerChar->mAgeDays / 30) % 12;
+            ImGui::Text("Idade: %zu anos, %zu meses", ageYears, ageMonths);
+            
+            // Dinheiro
+            //ImGui::Text("Tesouro: %.2f ouros", playerChar->FloatCost());
+            
+            // Dinastia
+            flecs::entity dynastyTarget = ecs.entity<Player>().target<DynastyMember>();
+            if (dynastyTarget.is_valid()) {
+                auto* dynasty = dynastyTarget.try_get<Dynasty>();
+                if (dynasty) {
+                    ImGui::Text("Dinastia: %s", dynasty->name.c_str());
+                }
+            }
         }
 
         ImGui::Spacing();
+
+        // Informações do Reino
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 200, 255, 255));
+        ImGui::Text("Reino");
+        ImGui::PopStyleColor();
+        
+        if (playerTitle) {
+            ImGui::Text("Título: %s", playerTitle->name.c_str());
+        } else {
+            ImGui::Text("Título: Sem reino");
+        }
+
+        // Contar províncias do reino (simplificado)
+        if (playerTitleEntity.is_valid()) {
+            int provinceCount = 0;
+            ecs.each<const Province>([&](flecs::entity p_entity, const Province&) {
+                if (p_entity.has<InRealm>(playerTitleEntity)) {
+                    provinceCount++;
+                }
+            });
+            ImGui::Text("Províncias: %d", provinceCount);
+        }
+
+        ImGui::Spacing();
+
+        // Poder dos Estados
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 200, 255, 255));
+        ImGui::Text("⚖ Poder dos Estados");
+        ImGui::PopStyleColor();
+        
+        if (estatePowers) {
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 4));
+            
+            // Nobreza
+            ImU32 nobilityColor = GetPowerColor(estatePowers->mNobilityPower);
+            ImGui::Text("  Nobreza:");
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Text, nobilityColor);
+            ImGui::Text(" %d", estatePowers->mNobilityPower);
+            ImGui::PopStyleColor();
+            
+            // Clero
+            ImU32 clergyColor = GetPowerColor(estatePowers->mClergyPower);
+            ImGui::Text("  Clero:");
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Text, clergyColor);
+            ImGui::Text(" %d", estatePowers->mClergyPower);
+            ImGui::PopStyleColor();
+            
+            // Povo
+            ImU32 commonersColor = GetPowerColor(estatePowers->mCommonersPower);
+            ImGui::Text("  Povo:");
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Text, commonersColor);
+            ImGui::Text(" %d", estatePowers->mCommonersPower);
+            ImGui::PopStyleColor();
+            
+            ImGui::PopStyleVar();
+            
+            // Barra de equilíbrio geral
+            int totalPower = estatePowers->mNobilityPower + estatePowers->mClergyPower + estatePowers->mCommonersPower;
+            float balance = std::abs(estatePowers->mNobilityPower) + std::abs(estatePowers->mClergyPower) + std::abs(estatePowers->mCommonersPower);
+            balance = balance / 3.0f / 127.0f; // Normalizar
+            
+            ImGui::Spacing();
+            ImGui::Text("Estabilidade:");
+            ImGui::SameLine();
+            
+            ImU32 stabilityColor;
+            if (balance < 0.25f) stabilityColor = IM_COL32(50, 200, 50, 255);
+            else if (balance < 0.5f) stabilityColor = IM_COL32(200, 200, 50, 255);
+            else if (balance < 0.75f) stabilityColor = IM_COL32(200, 150, 50, 255);
+            else stabilityColor = IM_COL32(200, 50, 50, 255);
+            
+            ImGui::PushStyleColor(ImGuiCol_Text, stabilityColor);
+            ImGui::Text(" %s", balance < 0.25f ? "Estável" : balance < 0.5f ? "Moderada" : balance < 0.75f ? "Tensa" : "Crítica");
+            ImGui::PopStyleColor();
+        } else {
+            ImGui::Text("Poder dos estados: N/A");
+        }
+
+        ImGui::PopStyleColor(); // Para o estilo de texto geral
+
+        ImGui::Columns(1); // Voltar para uma coluna
+        ImGui::Spacing();
+
+        // Rodapé com informações do jogo
+        ImGui::Separator();
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 180, 255));
+        ImGui::Text("Era dos Fidalgos 0,2.0");
+        ImGui::PopStyleColor();
 
     }
     ImGui::End();
 
     // Restaurar estilo
-    ImGui::PopStyleVar(3);
-    ImGui::PopStyleColor(2);
+    ImGui::PopStyleVar(4);
+    ImGui::PopStyleColor(3);
 }
