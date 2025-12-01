@@ -17,6 +17,12 @@
 #include "GameTime.hpp"
 #include "Random.hpp"
 
+struct EntityHandler {
+    flecs::entity ruler;
+    flecs::entity dynasty;
+    flecs::entity kingdom;
+};
+
 struct CharacterBuilder
 {
     const flecs::world ecs;
@@ -31,7 +37,7 @@ struct CharacterBuilder
     std::string GenFemaleName() const;
     CultureType GenCulture() const;
 
-    flecs::entity CreateDynastyWithKingdomAndFamily(bool isPlayer = false) const;
+    EntityHandler CreateDynastyWithKingdomAndFamily(bool isPlayer = false) const;
     flecs::entity CreateCharacter(
         const std::string& char_name,
         const flecs::entity& dynasty_entity,
@@ -122,7 +128,7 @@ CultureType CharacterBuilder::GenCulture() const
     }
 }
 
-flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer) const
+EntityHandler CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer) const
 {
     auto dName = GenDynastyName();
 
@@ -146,7 +152,11 @@ flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer)
         .add<CharacterCulture>(GenCulture());
     void(ruler.add<MarriedTo>(spouse));
 
-    return dynasty;
+    return EntityHandler {
+        ruler,
+        dynasty,
+        kingdom,
+    };
 }
 
 void DoCreateCharacterBuilder(const flecs::world& ecs)
@@ -278,8 +288,12 @@ void CreateKingdoms(const flecs::world &ecs, size_t count)
     {
         // A. Create New Kingdom (Dynasty/Title)
         kingdom_index++;
-        flecs::entity kingdom_dynasty = builder.CreateDynastyWithKingdomAndFamily(kingdom_index);
-        flecs::entity kingdom_title = kingdom_dynasty.target<DynastyHead>().target<RulerOf>();
+        auto handler = builder.CreateDynastyWithKingdomAndFamily(kingdom_index);
+
+        auto kingdom_dynasty = handler.dynasty;
+        auto kingdom_title = handler.kingdom;
+        auto kingdom_ruler = handler.ruler;
+
 
         // B. Select Random Seed Province (Initial Capital)
         std::vector<flecs::entity> current_unruled_provinces;
@@ -413,7 +427,6 @@ void CreateKingdoms(const flecs::world &ecs, size_t count)
             capital_province_entity.add<CapitalOf>(kingdom_title);
 
 
-            auto ruler = kingdom_dynasty.target<DynastyHead>();
             // Update distance_to_capital for all provinces in the realm
             for (flecs::entity p_entity : newly_claimed_provinces)
             {
@@ -428,11 +441,11 @@ void CreateKingdoms(const flecs::world &ecs, size_t count)
 
                     p->name = builder.GenProvinceName();
 
-                    p->popular_opinion = ruler.target<CharacterCulture>() == p->culture ? 10 : -10;
+                    p->popular_opinion = kingdom_ruler.target<CharacterCulture>() == p->culture ? 10 : -10;
                     p->control = 80 +
                         p->popular_opinion -
                         p->distance_to_capital * 0.2f +
-                        10 * GetCulturalTraits(ruler.get<CharacterCulture>().culture).extra_control;
+                        10 * GetCulturalTraits(kingdom_ruler.get<CharacterCulture>().culture).extra_control;
                     p->development = Random::GetIntRange(3, 15) + 5 * traits.extra_development;
 
                     p->income = 5 * (100 + p->development) * p->control;
