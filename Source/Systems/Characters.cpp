@@ -21,6 +21,7 @@ struct EntityHandler {
     flecs::entity ruler;
     flecs::entity dynasty;
     flecs::entity kingdom;
+    CultureType culture;
 };
 
 struct CharacterBuilder
@@ -42,13 +43,17 @@ struct CharacterBuilder
         const std::string& char_name,
         const flecs::entity& dynasty_entity,
         bool isMale,
-        flecs::entity baseEntity) const;
+        flecs::entity baseEntity,
+        CultureType culture
+        ) const;
     flecs::entity CreateCharacter(
         const std::string& char_name,
         const flecs::entity& dynasty_entity,
-        bool isMale) const
+        bool isMale,
+        CultureType culture
+        ) const
     {
-        return CreateCharacter(char_name, dynasty_entity, isMale, ecs.entity());
+        return CreateCharacter(char_name, dynasty_entity, isMale, ecs.entity(), culture);
     }
 };
 
@@ -56,7 +61,9 @@ flecs::entity CharacterBuilder::CreateCharacter(
     const std::string& char_name,
     const flecs::entity& dynasty_entity,
     bool isMale,
-    flecs::entity baseEntity) const
+    flecs::entity baseEntity,
+    CultureType culture
+    ) const
 {
     flecs::entity character = baseEntity
         .set<Character>({
@@ -68,6 +75,7 @@ flecs::entity CharacterBuilder::CreateCharacter(
     if (dynasty_entity.is_valid())
         void(character.add<DynastyMember>(dynasty_entity));
 
+    void(character.set<CharacterCulture>({culture}));
     void(character.disable<ShowCharacterDetails>());
     if (isMale)
     {
@@ -137,16 +145,18 @@ EntityHandler CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer)
     auto kingdom = ecs.entity().set<Title>({ dName + " Kingdom" });
     auto culture = GenCulture();
 
-    void(dynasty.add<CharacterCulture>(culture));
+    void(dynasty.set<CharacterCulture>(CharacterCulture { culture }));
+
+
     auto rulerName = GenMaleName();
-    auto ruler = CreateCharacter(rulerName, dynasty, true, isPlayer ? ecs.entity<Player>() : ecs.entity())
+    auto ruler = CreateCharacter(rulerName, dynasty, true, isPlayer ? ecs.entity<Player>() : ecs.entity(), culture)
     .add<DynastyHead>(dynasty).add<CharacterCulture>(culture);
     void(kingdom.add<RuledBy>(ruler));
 
     void(ruler.add<RulerOf>(kingdom));
 
     auto spouseName = GenFemaleName();
-    auto spouse = CreateCharacter(spouseName, dynasty, false)
+    auto spouse = CreateCharacter(spouseName, dynasty, false, culture)
         .add<MarriedTo>(ruler)
         .add<DynastyMember>(dynasty)
         .add<CharacterCulture>(GenCulture());
@@ -156,6 +166,7 @@ EntityHandler CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer)
         ruler,
         dynasty,
         kingdom,
+        culture
     };
 }
 
@@ -293,6 +304,7 @@ void CreateKingdoms(const flecs::world &ecs, size_t count)
         auto kingdom_dynasty = handler.dynasty;
         auto kingdom_title = handler.kingdom;
         auto kingdom_ruler = handler.ruler;
+        auto culture = handler.culture;
 
 
         // B. Select Random Seed Province (Initial Capital)
@@ -441,11 +453,11 @@ void CreateKingdoms(const flecs::world &ecs, size_t count)
 
                     p->name = builder.GenProvinceName();
 
-                    p->popular_opinion = kingdom_ruler.target<CharacterCulture>() == p->culture ? 10 : -10;
+                    p->popular_opinion = culture == p->culture ? 10 : -10;
                     p->control = 80 +
                         p->popular_opinion -
                         p->distance_to_capital * 0.2f +
-                        10 * GetCulturalTraits(kingdom_ruler.get<CharacterCulture>().culture).extra_control;
+                        10 * GetCulturalTraits(culture).extra_control;
                     p->development = Random::GetIntRange(3, 15) + 5 * traits.extra_development;
 
                     p->income = 5 * (100 + p->development) * p->control;
@@ -569,8 +581,7 @@ flecs::entity BirthChildCharacter(const flecs::world& ecs, const Character& fath
     const auto &builder = ecs.get<CharacterBuilder>();
     bool isMale = Random::GetIntRange(0, 1);
     auto name = isMale ? builder.GenMaleName() : builder.GenFemaleName();
-    auto child = builder.CreateCharacter(name, dynasty, isMale);
+    auto child = builder.CreateCharacter(name, dynasty, isMale,dynasty.get<CharacterCulture>().culture);
 
-    void(child.set<CharacterCulture>(dynasty.get<CharacterCulture>()));
     return child;
 }
