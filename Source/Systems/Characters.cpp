@@ -298,8 +298,7 @@ void CreateKingdoms(const flecs::world &ecs)
     while (!available_provinces.empty())
     {
         // A. Create New Kingdom (Dynasty/Title)
-        kingdom_index++;
-        auto handler = builder.CreateDynastyWithKingdomAndFamily(kingdom_index);
+        auto handler = builder.CreateDynastyWithKingdomAndFamily(kingdom_index++ == 0);
 
         auto kingdom_dynasty = handler.dynasty;
         auto kingdom_title = handler.kingdom;
@@ -332,7 +331,6 @@ void CreateKingdoms(const flecs::world &ecs)
         // Claim seed province
         available_provinces[seed_province_entity] = false; // Mark as no longer available in the pool
         newly_claimed_provinces.push_back(seed_province_entity);
-        seed_province_entity.add<InRealm>(kingdom_title);
 
         // 2. Expansion Loop (Dijkstra-like)
         while (!pq.empty())
@@ -461,6 +459,8 @@ void CreateKingdoms(const flecs::world &ecs)
                     p->development = Random::GetIntRange(3, 15) + 5 * traits.extra_development;
 
                     p->income = 5 * (100 + p->development) * p->control;
+
+                    void(p_entity.add<InRealm>(kingdom_title));
                 }
             }
             SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Kingdom %d formed with %zu provinces. Capital set.", kingdom_index, newly_claimed_provinces.size());
