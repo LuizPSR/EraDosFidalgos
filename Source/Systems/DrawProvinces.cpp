@@ -4,6 +4,7 @@
 #include <GL/glew.h>
 #include <flecs.h>
 
+#include "Characters.hpp"
 #include "Components/Camera.hpp"
 #include "Components/Province.hpp"
 #include "glm/ext/matrix_transform.hpp"
@@ -67,6 +68,13 @@ void RenderTileMap(flecs::iter &it)
 
                 glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
             }
+
+            if (it.entity(i).has<CapitalOf>(flecs::Wildcard))
+            {
+                shader->SetIntegerUniform("uTileIndex", 0);
+
+                glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
+            }
         }
     }
 
@@ -86,5 +94,19 @@ void DoRenderTileMapSystem(const flecs::world &ecs)
         .run([=](flecs::iter &it)
         {
             RenderTileMap(it);
+        });
+
+    ecs.system<const Province, const Camera, const Window>("SetHoveredProvince")
+        .kind(flecs::PreUpdate)
+        .each([](flecs::entity entity, const Province &province, const Camera &camera, const Window &window)
+        {
+            const auto &mousePosNDC = window.GetMousePosNDC();
+            const auto &mousePosWorld = camera.NDCToWorld(mousePosNDC, window);
+            const auto mousedOverTile = glm::round(glm::vec2(mousePosWorld) / TILE_SIZE_WORLD);
+            const glm::vec2 provinceTile(province.mPosX, province.mPosY);
+            if (mousedOverTile == provinceTile)
+                void(entity.add<Hovered>());
+            else
+                void(entity.remove<Hovered>());
         });
 }

@@ -27,11 +27,7 @@ struct Character
 
 struct CharacterCulture {CultureType culture;};
 
-struct RuledBy {};
-
 struct RulerOf {};
-
-struct CapitalOf {};
 
 struct Courtier {};
 

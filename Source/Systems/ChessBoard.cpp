@@ -1,9 +1,11 @@
 #include "ChessBoard.hpp"
 
+#include "Characters.hpp"
 #include "DrawProvinces.hpp"
 #include "imgui.h"
 #include "Game.hpp"
 #include "GameTime.hpp"
+#include "Components/Province.hpp"
 #include "Renderer/Shader.hpp"
 
 ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
@@ -18,6 +20,47 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
         {
             UpdateCamera(camera, input, window, it.delta_time());
         }));
+
+    ecs.system<const Province, const InputState>("SetProvinceShowDetails")
+        .with<Hovered>()
+        .each([](flecs::entity entity, const Province &, const InputState &input)
+        {
+            if (input.Clicked) void(entity.add<ShowProvinceDetails>());
+        });
+
+    ecs.system<const Province>("HoverProvinceName")
+        .with<Hovered>()
+        .tick_source(tickTimer)
+        .each([](const Province &province)
+        {
+            if (ImGui::GetIO().WantCaptureMouse) return;
+            ImGui::BeginTooltip();
+            ImGui::Text("%s (%zu, %zu)", province.name.data(), province.mPosX, province.mPosY);
+            ImGui::EndTooltip();
+        });
+
+    ecs.system<const Province, const Title, const Character>("ShowProvinceDetails")
+        .term_at(1).src("$title")
+        .term_at(2).src("$character")
+        .with<InRealm>("$title")
+        .with<RuledBy>("$character").src("$title")
+        .with<ShowProvinceDetails>()
+        .tick_source(tickTimer)
+        .each([](flecs::entity entity, const Province &province, const Title &title, const Character &character)
+        {
+            const auto windowTitle = "Província Selecionada##" + std::to_string(entity.id());
+            const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2{0.5f, 0.5f});
+            if (ImGui::Begin(windowTitle.data()))
+            {
+                ImGui::Text("Nome: %s", province.name.data());
+                ImGui::Text("Parte de: %s", title.name.data());
+                ImGui::Text("Governada por: %s", character.mName.data());
+                ImGui::Text("\t%zu anos", character.mAgeDays / 360);
+                ImGui::Text("\t%0.2f gold", character.mMoney * 0.01f);
+            }
+            ImGui::End();
+        });
 
     // void(ecs.system<ChessBoard, const Camera, Renderer, const Window>("Render3DScene")
     //     .kind(flecs::PreStore)

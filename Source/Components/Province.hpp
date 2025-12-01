@@ -5,8 +5,6 @@
 #include "Culture.hpp"
 #include "Geograph.hpp"
 
-struct InRealm {};
-
 struct Province
 {
     std::string name;
@@ -39,3 +37,17 @@ struct Province
         return static_cast<double>(income) * 0.01;
     }
 };
+
+// -- RELATIONS --
+
+struct InRealm {};
+
+struct Hovered {};
+
+struct RuledBy {};
+
+struct CapitalOf {};
+
+// -- Tags --
+
+struct ShowProvinceDetails {};

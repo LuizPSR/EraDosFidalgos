@@ -131,11 +131,13 @@ void ImportModules(flecs::world& ecs) {
     void(ecs.import<PauseMenuModule>().disable());
     void(ecs.import<TestUIModule>().disable());
 
+    flecs::entity testUI = ecs.entity<TestUIModule>();
+
     // Game Systems - VOLTAR AO FORMATO ORIGINAL
     void(ecs.import<SoundModule>().disable());
-    void(ecs.import<CharactersModule>().child_of(ecs.lookup("TestUIModule")));
-    void(ecs.import<ChessBoardScene>().child_of(ecs.lookup("TestUIModule")).disable());
-    void(ecs.import<EventsSampleScene>().child_of(ecs.lookup("TestUIModule")));
+    void(ecs.import<CharactersModule>().child_of(testUI));
+    void(ecs.import<ChessBoardScene>().child_of(testUI).disable());
+    void(ecs.import<EventsSampleScene>().child_of(testUI));
 }
 
 GameTickSources::GameTickSources(const flecs::world& ecs) {
@@ -160,6 +162,7 @@ void ProcessInput(const flecs::world &ecs)
     input.MouseDelta = glm::vec2{0.0f};
     input.MouseScrollAmount = 0.0f;
     input.WasEscapePressed = false;
+    input.Clicked = false;
 
     const auto &io = ImGui::GetIO();
 
@@ -194,6 +197,9 @@ void ProcessInput(const flecs::world &ecs)
             case SDL_EVENT_MOUSE_BUTTON_UP:
             {
                 if (io.WantCaptureMouse) break;
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    input.Clicked = true;
+                }
                 if (event.button.button == SDL_BUTTON_RIGHT) {
                     input.IsRightMouseButtonDown = false;
                     if (!input.IsMiddleMouseButtonDown) {

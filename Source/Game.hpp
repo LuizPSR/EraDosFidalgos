@@ -12,6 +12,7 @@ struct InputState
     bool IsRightMouseButtonDown = false;
     bool IsMiddleMouseButtonDown = false;
     bool WasEscapePressed = false;
+    bool Clicked = false;
     glm::vec2 MouseDelta;
     float MouseScrollAmount = 0.0f;
 };
