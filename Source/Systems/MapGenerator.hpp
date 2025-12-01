@@ -390,7 +390,7 @@ float calculate_travel_cost(TerrainType terrain, BiomeType biome, CultureType cu
         return std::numeric_limits<float>::infinity();
     }
 
-    auto traits = GetTraits(culture);
+    auto traits = GetCulturalTraits(culture);
     int mismatch = get_terrain_biome_match(terrain, biome, traits.preferred_terrain, traits.preferred_biome);
     
     return BASE_TRAVEL_COST + (TERRAIN_BIOME_MISMATCH_PENALTY * mismatch);
@@ -565,6 +565,8 @@ inline void RegisterMapGenerationSystem(flecs::world& world) {
                     province.development = (terrain_map[x][y] != Sea) ? 10 : 0;
                     province.control = (terrain_map[x][y] != Sea) ? 100 : 0;
 
+                    province.culture = culture_map[x][y];
+
                     province.movement_cost =    10;// base cost
                     province.movement_cost +=  5 * (province.terrain == Plains);
                     province.movement_cost +=  5 * (province.terrain == Mountains);
@@ -586,5 +588,7 @@ inline void RegisterMapGenerationSystem(flecs::world& world) {
 
             // Remove the GenerateMap component after generation
             e.destruct();
+
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Map Generated Successfully");
         });
 }

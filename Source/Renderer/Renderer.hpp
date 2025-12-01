@@ -68,4 +68,6 @@ struct Renderer
 
     // Map of textures loaded
     std::unordered_map<std::string, class Texture*> mTextures;
+
+	void DrawScreenTexture(Texture* texture, const glm::vec4& destRect = glm::vec4(0, 0, 1, 1));
 };

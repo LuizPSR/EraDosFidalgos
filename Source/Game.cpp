@@ -10,155 +10,21 @@
 #include "Random.hpp"
 #include "ImGUIConfig.hpp"
 #include "Renderer/Renderer.hpp"
+
+// UI Screens
+#include "UI/UIScreens/MainMenu.hpp"
+#include "UI/UIScreens/PauseMenu.hpp"
+#include "UI/UIScreens/TestUI.hpp"
+#include "UI/UIScreens/UICommon.hpp" // Adicionar este include
+
+// Systems
 #include "Systems/ChessBoard.hpp"
 #include "Systems/Events.hpp"
 #include "Systems/Characters.hpp"
 #include "Systems/Sound.hpp"
-
 #include "Systems/MapGenerator.hpp"
 
-struct MainMenuModule
-{
-    explicit MainMenuModule(flecs::world &ecs);
-};
-
-struct PauseMenuModule
-{
-    explicit PauseMenuModule(flecs::world &ecs);
-};
-
-void UnPause(const flecs::world &ecs, GameTickSources &timers)
-{
-    void(timers.mTickTimer.start());
-}
-
-void Pause(const flecs::world &ecs, GameTickSources &timers)
-{
-    void(timers.mTickTimer.stop());
-}
-
-bool HorizontalButton(const char* label, const ImVec2& size_arg = ImVec2(-FLT_MIN, 0))
-{
-    return ImGui::Button(label, size_arg);
-}
-
-struct TestUIModule
-{
-    explicit TestUIModule(flecs::world &ecs);
-};
-
-MainMenuModule::MainMenuModule(flecs::world& ecs)
-{
-    ecs.system<GameTickSources, const InputState>("MainMenu")
-        .each([](const flecs::iter &it, size_t, GameTickSources &timers, const InputState &input)
-        {
-            const auto &ecs = it.world();
-
-            const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-            const ImVec2 size = ImGui::GetMainViewport()->Size;
-            ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-            ImGui::SetNextWindowSizeConstraints(ImVec2{size.x * 0.6f, size.y * 0.2f}, ImVec2{FLT_MAX, FLT_MAX});
-            if (ImGui::Begin("Era dos Fidalgos", nullptr,
-                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground))
-            {
-                if (HorizontalButton("Start"))
-                {
-                    void(ecs.entity<MainMenuModule>().disable());
-                    void(ecs.entity<TestUIModule>().enable());
-                    UnPause(ecs, timers);
-                }
-                if (HorizontalButton("Quit") || input.WasEscapePressed)
-                    ecs.quit();
-            }
-            ImGui::End();
-        });
-}
-
-PauseMenuModule::PauseMenuModule(flecs::world& ecs)
-{
-    ecs.system<GameTickSources, const InputState>("PauseMenu")
-       .each([](const flecs::iter &it, size_t, GameTickSources &timers, const InputState &input)
-       {
-           const auto &ecs = it.world();
-
-           const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-           const ImVec2 size = ImGui::GetMainViewport()->Size;
-           ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-           ImGui::SetNextWindowSizeConstraints(ImVec2{size.x * 0.6f, size.y * 0.2f}, ImVec2{FLT_MAX, FLT_MAX});
-           if (ImGui::Begin("Paused", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize))
-           {
-               if (HorizontalButton("Resume") || input.WasEscapePressed)
-               {
-                   void(ecs.entity<PauseMenuModule>().disable());
-                   void(ecs.entity<TestUIModule>().enable());
-                   UnPause(ecs, timers);
-               }
-               if (HorizontalButton("Quit"))
-               {
-                   void(ecs.entity<TestUIModule>().disable());
-                   void(ecs.entity<PauseMenuModule>().disable());
-                   void(ecs.entity<MainMenuModule>().enable());
-               }
-           }
-           ImGui::End();
-       });
-}
-
-TestUIModule::TestUIModule(flecs::world& ecs)
-{
-    const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
-
-    ecs.system<GameTickSources>("UpdateUI")
-        .tick_source(tickTimer)
-        .kind(flecs::OnUpdate)
-        .each([](const flecs::iter &it, size_t, GameTickSources &timers)
-        {
-            const auto &ecs = it.world();
-            if (auto input = ecs.try_get<InputState>(); input->WasEscapePressed)
-            {
-                Pause(ecs, timers);
-                void(ecs.entity<PauseMenuModule>().enable());
-            }
-            if (ImGui::Begin("Menu"))
-            {
-                ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-                ImGui::Separator();
-                if (ImGui::Button("Click Me"))
-                {
-                    SDL_Log("I've been clicked!");
-                }
-
-                glm::vec2 mPos;
-                SDL_GetRelativeMouseState(&mPos.x, &mPos.y);
-                ImGui::Text("Mouse Relative: %.1f %.1f", mPos.x, mPos.y);
-
-                static bool chessboardActive = false;
-                if (ImGui::Checkbox("Chessboard", &chessboardActive))
-                {
-                    if (!chessboardActive)
-                    {
-                        ChessBoardScene::Stop(ecs.entity<ChessBoardScene>().disable());
-                    } else
-                    {
-                        ChessBoardScene::Start(ecs.entity<ChessBoardScene>().enable());
-                    }
-                }
-
-                static bool showDemo = false;
-                ImGui::Checkbox("Show ImGUI Demo", &showDemo);
-                if (showDemo) ImGui::ShowDemoWindow();
-
-                if (ImGui::Button("Create Kingdoms"))
-                {
-                    CreateKingdoms(ecs, 3);
-                }
-            }
-            ImGui::End();
-        });
-}
-
-bool Initialize(flecs::world &ecs)
-{
+bool Initialize(flecs::world &ecs) {
     Random::Init();
 
     // Init window
@@ -185,8 +51,11 @@ bool Initialize(flecs::world &ecs)
         .add(flecs::Singleton)
         .add<Camera>());
 
+    void(ecs.component<GameTickSources>()
+        .add(flecs::Singleton)
+        .emplace<GameTickSources>(ecs));
+
     // Creates ImGUI ini file path
-    // Has to have a static lifetime
     static char iniPathBuf[256] = {};
     const auto iniPath = std::filesystem::path(SDL_GetPrefPath("dcc_jogos", "EraDosFidalgos")) / "imgui.ini";
     strncpy(iniPathBuf, iniPath.string().data(), 255);
@@ -203,11 +72,6 @@ bool Initialize(flecs::world &ecs)
     if (ImGui_ImplOpenGL3_Init("#version 330") == false)
         return false;
 
-    // Game Tick Sources
-    void(ecs.component<GameTickSources>()
-        .add(flecs::Singleton)
-        .emplace<GameTickSources>(GameTickSources{ecs}));
-
     // Init ECS
     RegisterSystems(ecs);
     ImportModules(ecs);
@@ -215,22 +79,20 @@ bool Initialize(flecs::world &ecs)
     return true;
 }
 
-void RegisterSystems(flecs::world &ecs)
-{
+void RegisterSystems(flecs::world &ecs) {
     ecs.system("ReadInput")
         .kind(flecs::OnLoad)
         .run([](const flecs::iter &it) {
             ProcessInput(it.world());
         });
+
     ecs.system("StartFrame")
         .kind(flecs::PreUpdate)
-        .run([](flecs::iter &)
-        {
+        .run([](flecs::iter &) {
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
 
-            // Limit UI screen space
             ImGuiViewport* viewport = ImGui::GetMainViewport();
             float borderThickness = 16.0f;
             viewport->WorkPos.x += borderThickness;
@@ -240,61 +102,53 @@ void RegisterSystems(flecs::world &ecs)
 
             ImGui::DockSpaceOverViewport(0, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
         });
+
     ecs.system<Renderer>("StartRender")
         .kind(flecs::PreStore)
-        .each([](Renderer &renderer)
-        {
+        .each([](Renderer &renderer) {
             renderer.Clear();
         });
+
     ecs.system<Renderer>("PresentRender")
         .kind(flecs::OnStore)
-        .each([](Renderer &renderer)
-        {
+        .each([](Renderer &renderer) {
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
             renderer.Present();
         });
 
     // Register the map generation system
     RegisterMapGenerationSystem(ecs);
 
-    // Trigger map generation by creating an entity with GenerateMap component
+    // Trigger map generation
     ecs.entity()
-        .set<GenerateMap>({42});  // seed = 42
+        .set<GenerateMap>({36533});
 }
 
-void ImportModules(flecs::world& ecs)
-{
+void ImportModules(flecs::world& ecs) {
+    // UI Modules - VOLTAR AO FORMATO ORIGINAL
     void(ecs.import<MainMenuModule>());
-
     void(ecs.import<PauseMenuModule>().disable());
-
     void(ecs.import<TestUIModule>().disable());
 
+    // Game Systems - VOLTAR AO FORMATO ORIGINAL
     void(ecs.import<SoundModule>().disable());
-
-    void(ecs.import<CharactersModule>()
-        .child_of<TestUIModule>());
-
-    void(ecs.import<ChessBoardScene>()
-        .child_of<TestUIModule>()
-        .disable());
-
-    void(ecs.import<EventsSampleScene>()
-        .child_of<TestUIModule>());
+    void(ecs.import<CharactersModule>().child_of(ecs.lookup("TestUIModule")));
+    void(ecs.import<ChessBoardScene>().child_of(ecs.lookup("TestUIModule")).disable());
+    void(ecs.import<EventsSampleScene>().child_of(ecs.lookup("TestUIModule")));
 }
 
-GameTickSources::GameTickSources(const flecs::world& ecs)
-{
+GameTickSources::GameTickSources(const flecs::world& ecs) {
     mTickTimer = ecs.timer("TickTimer");
     mDayTimer = ecs.timer("DayTimer");
-    mDayTimer.stop();
     mWeekTimer = ecs.timer("WeekTimer");
-    mWeekTimer.stop();
     mMonthTimer = ecs.timer("MonthTimer");
-    mMonthTimer.stop();
     mYearTimer = ecs.timer("YearTimer");
+
+    // Iniciar apenas o tick timer, os outros podem ficar parados inicialmente
+    mDayTimer.stop();
+    mWeekTimer.stop();
+    mMonthTimer.stop();
     mYearTimer.stop();
 }
 

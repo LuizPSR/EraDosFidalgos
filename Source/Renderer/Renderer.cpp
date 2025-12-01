@@ -6,6 +6,7 @@
 
 #include <filesystem>
 
+#include "imgui.h"
 #include "Shader.hpp"
 #include "VertexArray.hpp"
 #include "Texture.hpp"
@@ -264,4 +265,49 @@ void Renderer::CreateSpriteVerts()
         2, 3, 0
     };
     mSpriteVerts = new VertexArray(vertices, 4, indices, 6);
+}
+
+void Renderer::DrawScreenTexture(Texture* texture, const glm::vec4& destRect) {
+    if (!texture || !mSpriteVerts) return;
+
+    // Configurar para desenhar em coordenadas de tela (-1 a 1)
+    glm::mat4 identity(1.0f);
+
+    mBaseShader->SetActive();
+    mBaseShader->SetMatrixUniform("uWorldTransform", identity);
+    mBaseShader->SetVectorUniform("uColor", glm::vec3(1.0f, 1.0f, 1.0f));
+    mBaseShader->SetVectorUniform("uTexRect", glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    mBaseShader->SetVectorUniform("uCameraPos", glm::vec2(0.0f));
+    mBaseShader->SetFloatUniform("uTextureFactor", 1.0f);
+
+    texture->SetActive();
+    mSpriteVerts->SetActive();
+
+    glDrawElements(GL_TRIANGLES, mSpriteVerts->GetNumIndices(), GL_UNSIGNED_INT, nullptr);
+}
+
+static ImTextureID LoadBackgroundTexture() {
+    static ImTextureID cachedTexture = (ImTextureID)0;
+    static bool triedLoading = false;
+
+    if (triedLoading) return cachedTexture;
+    triedLoading = true;
+
+    // Tentar usar o sistema de texturas existente do Renderer
+    // Isso requer acesso ao ecs, então vamos fazer uma abordagem diferente
+    std::string backgroundPath = std::string(SDL_GetBasePath()) + "Assets/EDF II title.png";
+    SDL_Log("Trying to load background: %s", backgroundPath.c_str());
+
+    // Verificar se o arquivo existe
+    SDL_IOStream* io = SDL_IOFromFile(backgroundPath.c_str(), "rb");
+    if (!io) {
+        SDL_Log("Background file not found: %s", backgroundPath.c_str());
+        return (ImTextureID)0;
+    }
+    SDL_CloseIO(io);
+
+    // Para simplificar, vamos usar uma abordagem mais direta
+    // Carregar via stb_image ou usar o sistema do jogo seria melhor
+    SDL_Log("Background image exists but loading is disabled for compatibility");
+    return (ImTextureID)0;
 }

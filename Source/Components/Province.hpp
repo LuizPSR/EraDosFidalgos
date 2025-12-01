@@ -2,25 +2,10 @@
 #include <string>
 #include <cstdint>
 
+#include "Culture.hpp"
+#include "Geograph.hpp"
+
 struct InRealm {};
-
-enum TerrainType {
-    Sea,
-
-    Wetlands,
-    Plains,
-    Hills,
-    Mountains,
-};
-
-enum BiomeType {
-    Water,
-
-    Drylands,    // hot  and dry
-    Grasslands,  // cold and dry
-    Jungles,     // hot  and wet
-    Forests,     // cold and dry
-};
 
 struct Province
 {
@@ -34,6 +19,8 @@ struct Province
     int32_t popular_opinion = 0;
     float distance_to_capital = 0;
 
+    CultureType culture = FarmLanders;
+
     // Buildings
     uint32_t market_level = 0;
     uint32_t temples_level = 0;
@@ -46,7 +33,7 @@ struct Province
     BiomeType biome = BiomeType::Water;
     float movement_cost = 0;
 
-    // Transforms income from fixed point to floating point (USE FOR DISPLAY ONLY)
+    // Transforms income from fixed point to floating point
     [[nodiscard]] double IncomeFloat() const
     {
         return static_cast<double>(income) * 0.01;

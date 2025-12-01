@@ -3,6 +3,7 @@
 #include <flecs.h>
 
 #include "Components/Province.hpp"
+#include "Components/Culture.hpp"
 
 struct Title
 {
@@ -24,7 +25,13 @@ struct Character
 
 // -- RELATIONS --
 
+struct CharacterCulture {CultureType culture;};
+
 struct RuledBy {};
+
+struct RulerOf {};
+
+struct CapitalOf {};
 
 struct Courtier {};
 
@@ -65,7 +72,7 @@ struct CharacterQueries
     flecs::query<const Province, const Title> qProvincesOfTitle;
 };
 
-void CreateKingdoms(const flecs::world &ecs, size_t count);
+void CreateKingdoms(const flecs::world &ecs);
 
 void RenderCharacterOverviewWindow(
     const flecs::world& ecs, const CharacterQueries& queries);

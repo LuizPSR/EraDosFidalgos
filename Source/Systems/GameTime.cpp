@@ -60,7 +60,7 @@ void DoGameTimeSystems(const flecs::world& ecs, flecs::timer tickTimer)
             if (ImGui::Begin("Time Controls"))
             {
                 ImGui::Text("Day %zu %02zu:%02zu", t.TimeDays(), t.TimeHours(), t.TimeMinutes());
-                ImGui::SliderFloat("Speed", &t.mSpeed, 0.0f, 2.0f, "%.2f d/s");
+                ImGui::SliderFloat("Speed", &t.mSpeed, 1.0f, 10.0f, "%.2f d/s");
                 ImGui::SliderFloat("Accel", &t.mSpeedAccel, -0.5f, 0.5f, "%.2f d/s²");
             }
             ImGui::End();
