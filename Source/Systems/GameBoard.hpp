@@ -8,12 +8,12 @@
 #include "Components/Window.hpp"
 #include "Components/Camera.hpp"
 
-struct ChessBoardScene
+struct GameBoardScene
 {
-    explicit ChessBoardScene(const flecs::world &ecs);
+    explicit GameBoardScene(const flecs::world &ecs);
 };
 
-struct ChessBoard
+struct GameBoard
 {
     // The model matrix for the board
     const glm::mat4 mModel = glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1000.0f, 1.0f));

@@ -14,11 +14,11 @@
 // UI Screens
 #include "UI/UIScreens/MainMenu.hpp"
 #include "UI/UIScreens/PauseMenu.hpp"
-#include "UI/UIScreens/TestUI.hpp"
+#include "UI/UIScreens/GameUI.hpp"
 #include "UI/UIScreens/UICommon.hpp" // Adicionar este include
 
 // Systems
-#include "Systems/ChessBoard.hpp"
+#include "Systems/GameBoard.hpp"
 #include "Systems/Events.hpp"
 #include "Systems/Characters.hpp"
 #include "Systems/Sound.hpp"
@@ -136,7 +136,7 @@ void ImportModules(flecs::world& ecs) {
     // Game Systems - VOLTAR AO FORMATO ORIGINAL
     void(ecs.import<SoundModule>().disable());
     void(ecs.import<CharactersModule>().child_of(testUI));
-    void(ecs.import<ChessBoardScene>().child_of(testUI));
+    void(ecs.import<GameBoardScene>().child_of(testUI));
     void(ecs.import<EventsSampleScene>().child_of(testUI));
 }
 

@@ -1,9 +1,9 @@
 
-#include "TestUI.hpp"
+#include "GameUI.hpp"
 #include <imgui.h>
 
 #include "Components/Dynasty.hpp"
-#include "Systems/ChessBoard.hpp"
+#include "Systems/GameBoard.hpp"
 #include "Systems/Characters.hpp"
 #include "Systems/EstatePower.hpp" // Adicionar este include
 #include "Renderer/Renderer.hpp"
@@ -121,17 +121,9 @@ void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
                    1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::Separator();
 
-        if (ImGui::Button("Click Me")) {
-            SDL_Log("I've been clicked!");
-        }
-
         glm::vec2 mPos;
         SDL_GetRelativeMouseState(&mPos.x, &mPos.y);
         ImGui::Text("Mouse Relative: %.1f %.1f", mPos.x, mPos.y);
-
-        static bool showDemo = false;
-        ImGui::Checkbox("Show ImGUI Demo", &showDemo);
-        if (showDemo) ImGui::ShowDemoWindow();
     }
     ImGui::End();
 
@@ -282,6 +274,7 @@ void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
                 }
             });
             ImGui::Text("Províncias: %d", provinceCount);
+            ImGui::Text("Ouro: %.2f", playerChar->MoneyFloat());
         }
 
         ImGui::Spacing();

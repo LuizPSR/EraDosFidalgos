@@ -41,6 +41,8 @@ struct DynastyHead {};
 // Whether to show character details
 struct ShowCharacterDetails {};
 
+struct Deceased {};
+
 enum class Gender
 {
     Male, Female

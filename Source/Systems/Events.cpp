@@ -5,13 +5,8 @@
 #include "Characters.hpp"
 #include "Game.hpp"
 
-// TODO: remove this
-#include <algorithm>
-#include <SDL3/SDL.h>
-
 #include "EstatePower.hpp"
 #include "ProvinceRevenue.hpp"
-#include "Components/Province.hpp"
 
 void CenterNextImGuiWindow()
 {
@@ -207,6 +202,15 @@ void DoSamplePopupSystem(const flecs::world& ecs, flecs::timer tickTimer)
 
 void DoCharacterAgingSystem(const flecs::world& ecs, const GameTickSources& timers)
 {
+    ecs.system<Character>()
+        .tick_source(timers.mYearTimer)
+        .each([](flecs::entity e, Character &character)
+        {
+            if (character.mAgeDays < 360 * 60) return;
+            // TODO: add a timeout to death
+            if (Random::GetFloat() < 0.2f) void(e.add<Deceased>());
+        });
+
     ecs.system<Character, const GameTime>()
         .tick_source(timers.mDayTimer)
         .each([](flecs::entity e, Character &character, const GameTime &gameTime)
@@ -214,6 +218,55 @@ void DoCharacterAgingSystem(const flecs::world& ecs, const GameTickSources& time
             character.mAgeDays += gameTime.CountDayChanges();
             if (!e.has(AgeClass::Adult) && character.mAgeDays > 16 * 360)
                 void(e.add(AgeClass::Adult));
+        });
+}
+
+void DoGameOverEvents(const flecs::world& ecs, const GameTickSources& timers)
+{
+    ecs.system<const Character>()
+        .entity(ecs.entity<Player>())
+        .with<Deceased>()
+        .tick_source(timers.mTickTimer)
+        .each([](flecs::entity entity, const Character &character)
+        {
+            void(entity.add<PausesGame>());
+            if (ImGui::Begin("Você Morreu"))
+            {
+                ImGui::Text("Após uma vida, você retornou ao pó, e deixa um reino a seus filhos.");
+                ImGui::Text("Vivestes por %zd anos", character.mAgeDays / 360);
+                ImGui::Text("Volte ao menu para reiniciar.");
+            }
+            ImGui::End();
+        });
+
+    ecs.system<const EstatePowers>()
+        .tick_source(timers.mTickTimer)
+        .each([](flecs::iter &it, size_t, const EstatePowers &powers)
+        {
+            if (powers.mCommonersPower > -100 && powers.mCommonersPower < 100
+                && powers.mNobilityPower > -100 && powers.mNobilityPower < 100
+                && powers.mClergyPower > -100 && powers.mClergyPower < 100)
+                return;
+
+            void(it.world().entity("GameOver").add<PausesGame>());
+            if (ImGui::Begin("Você Morreu"))
+            {
+                ImGui::Text("O reino colapsou devido à má gestão.");
+                if (powers.mCommonersPower <= -100)
+                    ImGui::Text("A plebe, irada pela vida precária, invade o palácio.");
+                if (powers.mCommonersPower >= 100)
+                    ImGui::Text("A burguesia resolve livrar-se da família real e instaurar uma república.");
+                if (powers.mClergyPower <= -100)
+                    ImGui::Text("Devido à perseguição extrema ao clero, sofreu um julgamento divino.");
+                if (powers.mClergyPower >= 100)
+                    ImGui::Text("Espiritualistas tomam conta do clero e da nação, proclamando que a matéria é má e que ninguém deve obedecer a rei algum.");
+                if (powers.mNobilityPower <= -100)
+                    ImGui::Text("Os nobres vassalos não mais respeitam os seus contratos, já que você não respeitou sua parte, e o reino já não existe.");
+                if (powers.mNobilityPower >= 100)
+                    ImGui::Text("O poder que rege no reino já não é mais o seu, o povo respeita e admira mais a nobreza local, e eles decidem dividir o poder e eleger um novo monarca entre si.");
+            }
+            ImGui::Text("Volte ao menu para reiniciar.");
+            ImGui::End();
         });
 }
 
@@ -237,20 +290,10 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 
     DoEstatePowerSystems(ecs, timers);
 
+    DoGameOverEvents(ecs, timers);
+
     EventsSampleScene::InitializeEntities(ecs);
 }
 
 void EventsSampleScene::InitializeEntities(const flecs::world& ecs)
-{
-    void(ecs.entity()
-        .emplace<SamplePopup>(SamplePopup{ "Bem vindo ao Era dos Fidalgos!" })
-        .add<FiredEvent>());
-
-    void(ecs.entity()
-        .emplace<EventSchedule>(EventSchedule::AtDay(5))
-        .emplace<SamplePopup>(SamplePopup{ "I popped up at day 5" }));
-
-    void(ecs.entity()
-        .emplace<EventSchedule>(EventSchedule::AtDay(10))
-        .emplace<SamplePopup>(SamplePopup{ "I popped up at day 10" }));
-}
+{}

@@ -16,7 +16,7 @@
 // TODO: make random deterministic
 #include "GameTime.hpp"
 #include "Random.hpp"
-#include "UI/UIScreens/TestUI.hpp"
+#include "UI/UIScreens/GameUI.hpp"
 
 struct EntityHandler {
     flecs::entity ruler;
@@ -69,7 +69,7 @@ flecs::entity CharacterBuilder::CreateCharacter(
     flecs::entity character = baseEntity
         .set<Character>({
             .mName = char_name,
-            .mMoney = 123,
+            .mMoney = 4971,
             .mAgeDays = 20 * 360,
         });
 

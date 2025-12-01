@@ -1,4 +1,4 @@
-#include "ChessBoard.hpp"
+#include "GameBoard.hpp"
 
 #include "Characters.hpp"
 #include "DrawProvinces.hpp"
@@ -8,7 +8,7 @@
 #include "Components/Province.hpp"
 #include "Renderer/Shader.hpp"
 
-ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
+GameBoardScene::GameBoardScene(const flecs::world& ecs)
 {
     const auto &timers = ecs.get<GameTickSources>();
     const flecs::entity tickTimer = timers.mTickTimer;
@@ -66,6 +66,8 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
             if (!open) void(entity.remove<ShowProvinceDetails>());
         });
 
+    DoRenderTileMapSystem(ecs);
+
     // void(ecs.system<ChessBoard, const Camera, Renderer, const Window>("Render3DScene")
     //     .kind(flecs::PreStore)
     //     .each([](ChessBoard &board, const Camera &camera, Renderer &renderer, const Window &window)
@@ -73,29 +75,27 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
     //         board.Draw(renderer, camera, window);
     //     }));
 
-    DoRenderTileMapSystem(ecs);
-
-    void(ecs.system<Camera, const Window>("SceneUI")
-        .tick_source(tickTimer)
-        .kind(flecs::OnUpdate)
-        .each([](Camera &camera, const Window &window)
-        {
-            ImGui::Begin("Scene Loaded");
-
-            ImGui::Text("Camera Position: (%.1f, %.1f, %.1f)", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
-            ImGui::Text("Target Position: (%.1f, %.1f, %.1f)", camera.mTarget.x, camera.mTarget.y, camera.mTarget.z);
-            ImGui::SliderFloat("Zoom", &camera.mZoomLevel, camera.mMinZoom, camera.mMaxZoom);
-
-            glm::vec2 mousePos = window.GetMousePosNDC();
-            ImGui::Text("Mouse Position (NDC): (%.1f, %.1f)", mousePos.x, mousePos.y);
-
-            glm::vec3 mouseWorldPos = camera.NDCToWorld(mousePos, window);
-            ImGui::Text("Mouse Position (World): (%.1f, %.1f, %.1f)", mouseWorldPos.x, mouseWorldPos.y, mouseWorldPos.z);
-            ImGui::End();
-        }));
+    // void(ecs.system<Camera, const Window>("SceneUI")
+    //     .tick_source(tickTimer)
+    //     .kind(flecs::OnUpdate)
+    //     .each([](Camera &camera, const Window &window)
+    //     {
+    //         ImGui::Begin("Scene Loaded");
+    //
+    //         ImGui::Text("Camera Position: (%.1f, %.1f, %.1f)", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+    //         ImGui::Text("Target Position: (%.1f, %.1f, %.1f)", camera.mTarget.x, camera.mTarget.y, camera.mTarget.z);
+    //         ImGui::SliderFloat("Zoom", &camera.mZoomLevel, camera.mMinZoom, camera.mMaxZoom);
+    //
+    //         glm::vec2 mousePos = window.GetMousePosNDC();
+    //         ImGui::Text("Mouse Position (NDC): (%.1f, %.1f)", mousePos.x, mousePos.y);
+    //
+    //         glm::vec3 mouseWorldPos = camera.NDCToWorld(mousePos, window);
+    //         ImGui::Text("Mouse Position (World): (%.1f, %.1f, %.1f)", mouseWorldPos.x, mouseWorldPos.y, mouseWorldPos.z);
+    //         ImGui::End();
+    //     }));
 }
 
-void ChessBoard::Draw(Renderer& renderer, const Camera &camera, const Window &window)
+void GameBoard::Draw(Renderer& renderer, const Camera &camera, const Window &window)
 {
     const auto &chessShader = renderer.mChessShader;
     const auto &verts = renderer.mSpriteVerts;
