@@ -136,10 +136,6 @@ void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
         static bool showDemo = false;
         ImGui::Checkbox("Show ImGUI Demo", &showDemo);
         if (showDemo) ImGui::ShowDemoWindow();
-
-        if (ImGui::Button("Create Kingdoms")) {
-            CreateKingdoms(ecs);
-        }
     }
     ImGui::End();
 
