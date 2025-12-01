@@ -13,6 +13,7 @@
 // TODO: make random deterministic
 #include "GameTime.hpp"
 #include "Random.hpp"
+#include "UI/UIScreens/TestUI.hpp"
 
 struct CharacterBuilder
 {

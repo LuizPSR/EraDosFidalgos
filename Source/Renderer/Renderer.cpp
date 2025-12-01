@@ -106,6 +106,10 @@ void Renderer::Shutdown()
     delete mChessShader;
     mChessShader = nullptr;
 
+    mMapShader->Unload();
+    delete mMapShader;
+    mMapShader = nullptr;
+
     if (mContext)
     {
         SDL_GL_DestroyContext(mContext);
@@ -233,6 +237,11 @@ bool Renderer::LoadShaders()
 
     mChessShader = new Shader();
     if (!mChessShader->Load(std::filesystem::path(SDL_GetBasePath()) / "Shaders/Chess")) {
+        return false;
+    }
+
+    mMapShader = new Shader();
+    if (!mMapShader->Load(std::filesystem::path(SDL_GetBasePath()) / "Shaders/Map")) {
         return false;
     }
 

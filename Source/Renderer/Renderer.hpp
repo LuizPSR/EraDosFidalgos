@@ -54,6 +54,9 @@ struct Renderer
 	// Chess Shader
 	class Shader* mChessShader = nullptr;
 
+	// Map Shader
+	class Shader* mMapShader = nullptr;
+
     // Sprite vertex array
     class VertexArray * mSpriteVerts = nullptr;
 

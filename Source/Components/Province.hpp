@@ -26,6 +26,8 @@ struct Province
 {
     std::string name;
 
+    uint64_t mPosX = 0, mPosY = 0;
+
     uint64_t income = 0;
     uint64_t development = 0;
     uint64_t control = 0;

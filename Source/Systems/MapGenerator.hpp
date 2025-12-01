@@ -557,6 +557,8 @@ inline void RegisterMapGenerationSystem(flecs::world& world) {
                         .child_of(tilemap_entity);
 
                     auto& province = tile.ensure<Province>();
+                    province.mPosX = x;
+                    province.mPosY = y;
                     province.name = "Province_" + std::to_string(x) + "_" + std::to_string(y);
                     province.terrain = terrain_map[x][y];
                     province.biome = biome_map[x][y];

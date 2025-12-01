@@ -1,5 +1,6 @@
 #include "ChessBoard.hpp"
 
+#include "DrawProvinces.hpp"
 #include "imgui.h"
 #include "Game.hpp"
 #include "GameTime.hpp"
@@ -18,12 +19,14 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
             UpdateCamera(camera, input, window, it.delta_time());
         }));
 
-    void(ecs.system<ChessBoard, const Camera, Renderer, const Window>("Render3DScene")
-        .kind(flecs::PreStore)
-        .each([](ChessBoard &board, const Camera &camera, Renderer &renderer, const Window &window)
-        {
-            board.Draw(renderer, camera, window);
-        }));
+    // void(ecs.system<ChessBoard, const Camera, Renderer, const Window>("Render3DScene")
+    //     .kind(flecs::PreStore)
+    //     .each([](ChessBoard &board, const Camera &camera, Renderer &renderer, const Window &window)
+    //     {
+    //         board.Draw(renderer, camera, window);
+    //     }));
+
+    DoRenderTileMapSystem(ecs);
 
     void(ecs.system<Camera, const Window>("SceneUI")
         .tick_source(tickTimer)
@@ -44,7 +47,7 @@ ChessBoardScene::ChessBoardScene(const flecs::world& ecs)
             ImGui::End();
         }));
 
-    void(ecs.prefab("Active").add<ChessBoard>().add<Camera>());
+    void(ecs.prefab("Active").add<ChessBoard>());
 }
 
 void ChessBoardScene::Start(const flecs::entity& e)

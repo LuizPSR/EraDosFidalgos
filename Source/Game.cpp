@@ -181,6 +181,10 @@ bool Initialize(flecs::world &ecs)
         .add(flecs::Singleton)
         .add<InputState>());
 
+    void(ecs.component<Camera>()
+        .add(flecs::Singleton)
+        .add<Camera>());
+
     // Creates ImGUI ini file path
     // Has to have a static lifetime
     static char iniPathBuf[256] = {};

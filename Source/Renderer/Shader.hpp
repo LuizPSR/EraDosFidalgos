@@ -26,7 +26,6 @@ public:
     void SetFloatUniform(const char* name, float value) const;
     void SetIntegerUniform(const char *name, int value) const;
 
-private:
 	// Tries to compile the specified shader
 	bool CompileShader(const std::filesystem::path& fileName, GLenum shaderType, GLuint& outShader);
 
