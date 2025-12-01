@@ -72,7 +72,7 @@ struct CharacterQueries
     flecs::query<const Province, const Title> qProvincesOfTitle;
 };
 
-void CreateKingdoms(const flecs::world &ecs, size_t count);
+void CreateKingdoms(const flecs::world &ecs);
 
 void RenderCharacterOverviewWindow(
     const flecs::world& ecs, const CharacterQueries& queries);

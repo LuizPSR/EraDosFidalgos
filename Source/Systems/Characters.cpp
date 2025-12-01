@@ -236,7 +236,7 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         });
 }
 
-void CreateKingdoms(const flecs::world &ecs, size_t count)
+void CreateKingdoms(const flecs::world &ecs)
 {
     // Local structure for the priority queue in the Dijkstra-like algorithm
     struct ProvinceDistance
@@ -380,8 +380,8 @@ void CreateKingdoms(const flecs::world &ecs, size_t count)
                 // Calculate new distance using the current tile's movement cost
                 float new_dist = current_dist + travel_cost;
 
-                // Stop condition: distance > 300
-                if (new_dist > 300.0f) {
+                // Stop condition: distance > 100
+                if (new_dist > 100.0f) {
                     continue;
                 }
 
