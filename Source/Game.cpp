@@ -118,7 +118,7 @@ void RegisterSystems(flecs::world &ecs) {
 
     // Trigger map generation
     ecs.entity()
-        .set<GenerateMap>({42});
+        .set<GenerateMap>({36533});
 }
 
 void ImportModules(flecs::world& ecs) {

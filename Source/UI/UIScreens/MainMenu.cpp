@@ -4,6 +4,7 @@
 #include <SDL3/SDL.h>
 #include "Renderer/Renderer.hpp"
 #include "Renderer/Texture.hpp"
+#include "Systems/Characters.hpp"
 
 static bool HorizontalButton(const char* label, const ImVec2& size_arg = ImVec2(-FLT_MIN, 0)) {
     return ImGui::Button(label, size_arg);
@@ -158,6 +159,9 @@ void MainMenuModule::ShowMainMenu(const flecs::world& ecs, GameTickSources& tick
 
             if (mainMenuEntity.is_valid()) mainMenuEntity.disable();
             if (testUIEntity.is_valid()) testUIEntity.enable();
+
+            CreateKingdoms(ecs);
+
             tickSources.mTickTimer.start();
         }
 
