@@ -1,0 +1,159 @@
+[[event]]
+message = "Um poderoso Lorde da Nobreza organizou um torneio de justas extravagante e solicita que a Coroa pague o custo das festividades para manter o prestígio do reino. Recusar-se pode ser visto como um desprestígio à Nobreza."
+choices = [
+    { text = "Cobrir o custo total do torneio.", power_changes = [
+        ["Nobility", 20],
+    ], cost = 7.0 },
+    { text = "Cobrir apenas metade do custo, forçando o Lorde a pagar o restante.", power_changes = [
+        ["Nobility", 5],
+    ], cost = 3.5 },
+    { text = "Recusar-se a pagar; o Lorde deve financiar suas próprias festividades.", power_changes = [
+        ["Nobility", -10],
+    ], cost = 0.0 },
+]
+
+[[event]]
+message = "O Clero solicita a expansão da 'Dízima Sagrada' para incluir mais produtos agrícolas. Eles alegam que a receita adicional será usada para caridade e ajuda aos pobres, mas os Plebeus se opõem ao aumento da carga tributária."
+choices = [
+    { text = "Aprovar a expansão da Dízima Sagrada.", power_changes = [
+        ["Clergy", 15],
+        ["Commoners", -10],
+    ], cost = 0.0 },
+    { text = "Rejeitar a expansão; proteger os Plebeus.", power_changes = [
+        ["Commoners", 10],
+        ["Clergy", -5],
+    ], cost = 0.0 },
+    { text = "Oferecer um subsídio da Coroa para as obras de caridade do Clero, evitando a dízima.", power_changes = [
+        ["Clergy", 5],
+    ], cost = 3.0 },
+]
+
+[[event]]
+message = "A notícia de um culto herético está se espalhando entre os Plebeus, promovendo a desobediência civil e o abandono das terras dos Nobres. O Clero exige punições severas e financiamento para uma Inquisição."
+choices = [
+    { text = "Financiar a Inquisição e ordenar prisões imediatas.", power_changes = [
+        ["Clergy", 25],
+        ["Nobility", 5],
+        ["Commoners", -15],
+    ], cost = 8.5 },
+    { text = "Tentar resolver pacificamente, enviando emissários para debater a heresia.", power_changes = [
+        ["Clergy", -5],
+    ], cost = 1.0 },
+    { text = "Ignorar a questão.", power_changes = [
+        ["Clergy", -20],
+        ["Commoners", 5],
+    ], cost = 0.0 },
+]
+
+[[event]]
+message = "Uma grande seca ameaça a colheita dos Plebeus. Eles exigem que o Nobre local abra seus armazéns de grãos de reserva para distribuição, um ato que o Nobre considera uma violação de sua propriedade."
+choices = [
+    { text = "Confiscar as reservas de grãos do Nobre para distribuição pública.", power_changes = [
+        ["Commoners", 20],
+        ["Nobility", -20],
+    ], cost = 0.0 },
+    { text = "Comprar grãos de um reino vizinho para distribuição.", power_changes = [
+        ["Commoners", 10],
+    ], cost = 9.0 },
+    { text = "Manter o direito de propriedade do Nobre.", power_changes = [
+        ["Nobility", 10],
+        ["Commoners", -15],
+    ], cost = 0.0 },
+]
+
+[[event]]
+message = "O principal porto comercial do reino precisa de reparos urgentes no cais após uma tempestade. Os Plebeus (mercadores) exigem reparos imediatos. A Nobreza quer que a cidade pague, mas a cidade está endividada com o Clero."
+choices = [
+    { text = "Pagar pelo reparo total do porto com fundos do tesouro.", power_changes = [
+        ["Commoners", 15],
+    ], cost = 6.0 },
+    { text = "Forçar a Nobreza local a pagar os reparos.", power_changes = [
+        ["Nobility", -10],
+        ["Commoners", 5],
+    ], cost = 0.0 },
+    { text = "Permitir que o Clero ofereça um empréstimo para os reparos, em troca de futuras isenções fiscais.", power_changes = [
+        ["Clergy", 10],
+    ], cost = 0.0 },
+]
+
+[[event]]
+message = "Um grupo de Nobres está organizando uma expedição de caça de animais selvagens em uma área remota. Eles precisam de guardas adicionais para a segurança e exigem que a Coroa forneça tropas, um desvio de recursos militares."
+choices = [
+    { text = "Fornecer as tropas solicitadas para a caça da Nobreza.", power_changes = [
+        ["Nobility", 10],
+    ], cost = 2.5 },
+    { text = "Recusar-se; os recursos militares devem permanecer na defesa.", power_changes = [
+        ["Nobility", -5],
+    ], cost = 0.0 },
+    { text = "Contratar mercenários para proteger a caça.", power_changes = [
+        ["Nobility", 15],
+    ], cost = 5.5 },
+]
+
+[[event]]
+message = "O Clero descobriu um tesouro antigo de artefatos religiosos e deseja construir uma capela para exibi-los, transformando-a em um novo local de peregrinação. Eles pedem terras da Coroa e mão de obra plebeia gratuita."
+choices = [
+    { text = "Conceder terras da Coroa e mão de obra forçada de Plebeus.", power_changes = [
+        ["Clergy", 20],
+        ["Commoners", -10],
+    ], cost = 1.0 },
+    { text = "Conceder as terras, mas exigir que o Clero pague a mão de obra.", power_changes = [
+        ["Clergy", 10],
+    ], cost = 0.0 },
+    { text = "Negar a concessão de terras; o Clero deve encontrar seu próprio local e financiamento.", power_changes = [
+        ["Clergy", -10],
+    ], cost = 0.0 },
+]
+
+[[event]]
+message = "Um plebeu inventou um novo moinho de água altamente eficiente que pode duplicar a produção de farinha, o que ameaça os lucros dos moinhos mais antigos de propriedade da Nobreza."
+choices = [
+    { text = "Proibir o uso do novo moinho para proteger os interesses da Nobreza.", power_changes = [
+        ["Nobility", 15],
+        ["Commoners", -10],
+    ], cost = 0.0 },
+    { text = "Permitir o uso, mas cobrar uma taxa de licenciamento alta pela Coroa.", power_changes = [
+        ["Commoners", 5],
+        ["Nobility", 5],
+    ], cost = 4.0 },
+    { text = "Comprar a patente do moinho do Plebeu e permitir o uso livremente.", power_changes = [
+        ["Commoners", 20],
+        ["Nobility", -10],
+    ], cost = 8.0 },
+]
+
+[[event]]
+message = "Um grupo de poetas e trovadores plebeus está divulgando canções que zombam da Nobreza e criticam a política do Clero. O Clero exige que a Coroa censure e prenda esses artistas por subversão."
+choices = [
+    { text = "Prender e censurar os artistas imediatamente.", power_changes = [
+        ["Clergy", 10],
+        ["Nobility", 10],
+        ["Commoners", -20],
+    ], cost = 0.0 },
+    { text = "Ignorar as canções.", power_changes = [
+        ["Commoners", 10],
+        ["Clergy", -5],
+        ["Nobility", -5],
+    ], cost = 0.0 },
+    { text = "Patrocinar os artistas para escrever canções de louvor à Coroa e à Igreja.", power_changes = [
+        ["Commoners", 5],
+        ["Clergy", 5],
+    ], cost = 5.0 },
+]
+
+[[event]]
+message = "O Clero descobriu que um Lorde Nobre está acumulando terras da Igreja através de meios questionáveis. O Clero exige que essas terras sejam devolvidas imediatamente, ou ameaça excomungar o Lorde e protestar."
+choices = [
+    { text = "Forçar a devolução das terras à Igreja.", power_changes = [
+        ["Clergy", 20],
+        ["Nobility", -15],
+    ], cost = 0.0 },
+    { text = "Apoiar o Lorde Nobre e permitir que ele mantenha as terras.", power_changes = [
+        ["Nobility", 20],
+        ["Clergy", -20],
+    ], cost = 0.0 },
+    { text = "Mediar, comprando as terras do Nobre para devolvê-las ao Clero.", power_changes = [
+        ["Clergy", 5],
+        ["Nobility", 5],
+    ], cost = 7.5 },
+]

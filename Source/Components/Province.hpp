@@ -15,7 +15,7 @@ struct Province
     uint64_t development = 0;
     uint64_t control = 0;
     int32_t popular_opinion = 0;
-    float_t distance_to_capital = 0;
+    float distance_to_capital = 0;
 
     CultureType culture = FarmLanders;
 
@@ -29,7 +29,7 @@ struct Province
     // Geography
     TerrainType terrain = TerrainType::Sea;
     BiomeType biome = BiomeType::Water;
-    float_t movement_cost = 0;
+    float movement_cost = 0;
 
     // Transforms income from fixed point to floating point
     [[nodiscard]] double IncomeFloat() const

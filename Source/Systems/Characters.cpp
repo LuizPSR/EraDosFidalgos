@@ -14,6 +14,7 @@
 
 #include "Components/Dynasty.hpp"
 // TODO: make random deterministic
+#include "GameTime.hpp"
 #include "Random.hpp"
 
 struct CharacterBuilder
@@ -30,19 +31,28 @@ struct CharacterBuilder
     std::string GenFemaleName() const;
     CultureType GenCulture() const;
 
-    flecs::entity CreateDynastyWithKingdomAndFamily(size_t index) const;
+    flecs::entity CreateDynastyWithKingdomAndFamily(bool isPlayer = false) const;
     flecs::entity CreateCharacter(
         const std::string& char_name,
         const flecs::entity& dynasty_entity,
-        bool isMale) const;
+        bool isMale,
+        flecs::entity baseEntity) const;
+    flecs::entity CreateCharacter(
+        const std::string& char_name,
+        const flecs::entity& dynasty_entity,
+        bool isMale) const
+    {
+        return CreateCharacter(char_name, dynasty_entity, isMale, ecs.entity());
+    }
 };
 
 flecs::entity CharacterBuilder::CreateCharacter(
     const std::string& char_name,
     const flecs::entity& dynasty_entity,
-    bool isMale) const
+    bool isMale,
+    flecs::entity baseEntity) const
 {
-    flecs::entity character = ecs.entity()
+    flecs::entity character = baseEntity
         .set<Character>({
             .mName = char_name,
             .mMoney = 123,
@@ -101,18 +111,18 @@ std::string CharacterBuilder::GenFemaleName() const
 CultureType CharacterBuilder::GenCulture() const
 {
     switch (Random::GetIntRange(1, 4)) {
-        case 0:
-            return SteppeNomads;
-        case 1:
-            return HillDwellers;
-        case 2:
-            return ForestFolk;
-        default:
-            return FarmLanders;
+    case 0:
+        return SteppeNomads;
+    case 1:
+        return HillDwellers;
+    case 2:
+        return ForestFolk;
+    default:
+        return FarmLanders;
     }
 }
 
-flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t index) const
+flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer) const
 {
     auto dName = GenDynastyName();
 
@@ -121,13 +131,13 @@ flecs::entity CharacterBuilder::CreateDynastyWithKingdomAndFamily(const size_t i
     auto kingdom = ecs.entity().set<Title>({ dName + " Kingdom" });
     auto culture = GenCulture();
 
-    dynasty.add<CharacterCulture>(culture);
+    void(dynasty.add<CharacterCulture>(culture));
     auto rulerName = GenMaleName();
-    auto ruler = CreateCharacter(rulerName, dynasty, true)
-        .add<DynastyHead>(dynasty).add<CharacterCulture>(culture);
+    auto ruler = CreateCharacter(rulerName, dynasty, true, isPlayer ? ecs.entity<Player>() : ecs.entity())
+    .add<DynastyHead>(dynasty).add<CharacterCulture>(culture);
     void(kingdom.add<RuledBy>(ruler));
 
-    ruler.add<RulerOf>(kingdom);
+    void(ruler.add<RulerOf>(kingdom));
 
     auto spouseName = GenFemaleName();
     auto spouse = CreateCharacter(spouseName, dynasty, false)
@@ -159,7 +169,7 @@ void DoCreateCharacterBuilder(const flecs::world& ecs)
 
 CharactersModule::CharactersModule(const flecs::world& ecs)
 {
-    const flecs::entity tickTimer = ecs.get<GameTimers>().mTickTimer;
+    const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
 
     DoCreateCharacterBuilder(ecs);
 
@@ -495,6 +505,9 @@ void RenderCharacterDetailWindow(
         const auto &character = characterEntity.get<Character>();
 
         // --- BASIC INFO & DYNASTY ---
+        if (ecs.entity<Player>() == characterEntity)
+            ImGui::Text("Player Character");
+
         flecs::entity dynasty_target = characterEntity.target<DynastyMember>();
         auto *d = dynasty_target.try_get<Dynasty>();
         ImGui::Text("Dynasty: %s", d ? d->name.c_str() : "None");
@@ -545,6 +558,6 @@ flecs::entity BirthChildCharacter(const flecs::world& ecs, const Character& fath
     auto name = isMale ? builder.GenMaleName() : builder.GenFemaleName();
     auto child = builder.CreateCharacter(name, dynasty, isMale);
 
-    child.set<CharacterCulture>(dynasty.get<CharacterCulture>());
+    void(child.set<CharacterCulture>(dynasty.get<CharacterCulture>()));
     return child;
 }
