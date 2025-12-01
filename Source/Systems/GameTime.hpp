@@ -10,7 +10,7 @@ struct GameTime
 {
     uint64_t mTimeSecs = 0;
     uint64_t mLastTimeSecs = 0;
-    float mSpeed = 0, mSpeedAccel = 0;
+    float mSpeed = 3, mSpeedAccel = 0;
 
     [[nodiscard]] uint64_t CountYearChanges() const
     {

@@ -458,7 +458,7 @@ void CreateKingdoms(const flecs::world &ecs)
                         10 * GetCulturalTraits(culture).extra_control;
                     p->development = Random::GetIntRange(3, 15) + 5 * traits.extra_development;
 
-                    p->income = 5 * (100 + p->development) * p->control;
+                    p->income = 5 * (100 + p->development) * p->control * 0.01f;
 
                     void(p_entity.add<InRealm>(kingdom_title));
                 }

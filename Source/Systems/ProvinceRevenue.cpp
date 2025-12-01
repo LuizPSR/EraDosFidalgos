@@ -12,7 +12,7 @@ void DoProvinceRevenueSystems(const flecs::world& ecs, const GameTickSources &ti
         .build();
 
     ecs.system<Province, const GameTime>()
-        .tick_source(timers.mMonthTimer)
+        .tick_source(timers.mYearTimer)
         .each([=](flecs::iter &it, size_t i, Province &province, const GameTime &gameTime)
         {
             size_t days = gameTime.CountDayChanges();
