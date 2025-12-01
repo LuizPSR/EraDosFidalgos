@@ -1,13 +1,9 @@
-//
-// Created by thiago on 30/11/2025.
-//
+#pragma once
+#include <flecs.h>
+#include "Game.hpp"
 
-#ifndef ERADOSFIDALGOS_PAUSEMENU_H
-#define ERADOSFIDALGOS_PAUSEMENU_H
-
-
-class PauseMenu {
+struct PauseMenuModule {
+    explicit PauseMenuModule(flecs::world &ecs);
+    
+    static void ShowPauseMenu(const flecs::world& ecs, GameTickSources& tickSources, const InputState& input);
 };
-
-
-#endif //ERADOSFIDALGOS_PAUSEMENU_H

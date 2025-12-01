@@ -1,13 +1,9 @@
-//
-// Created by thiago on 30/11/2025.
-//
+#pragma once
+#include <flecs.h>
+#include "Game.hpp"
 
-#ifndef ERADOSFIDALGOS_MAINMENU_H
-#define ERADOSFIDALGOS_MAINMENU_H
-
-
-class MainMenu {
+struct MainMenuModule {
+    explicit MainMenuModule(flecs::world &ecs);
+    
+    static void ShowMainMenu(const flecs::world& ecs, GameTickSources& tickSources, const InputState& input);
 };
-
-
-#endif //ERADOSFIDALGOS_MAINMENU_H
