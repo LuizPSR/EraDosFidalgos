@@ -35,7 +35,7 @@ void RenderTileMap(flecs::iter &it)
             switch (province.biome)
             {
                 case Water: textureIndex = 10; break;
-                case Drylands: textureIndex = 2; break;
+                case Drylands: textureIndex = 1; break;
                 case Grasslands: textureIndex = 3; break;
                 case Jungles: textureIndex = 5; break;
                 case Forests: textureIndex = 2; break;
@@ -61,10 +61,12 @@ void RenderTileMap(flecs::iter &it)
                 case Hills: textureIndex = 4; break;
                 case Mountains: textureIndex = 6; break;
             }
+            if (textureIndex != -1)
+            {
+                shader->SetIntegerUniform("uTileIndex", textureIndex);
 
-            shader->SetIntegerUniform("uTileIndex", textureIndex);
-
-            glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
+                glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
+            }
         }
     }
 
