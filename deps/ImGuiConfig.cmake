@@ -4,7 +4,7 @@ FetchContent_Declare(
         imgui_repo
         URL            https://github.com/ocornut/imgui/archive/v1.92.3-docking.tar.gz
         URL_HASH       SHA256=fd0f88fcc593faa4d536c02baded6abc85463b9deb2d75ee829fed6d5dd48e0e
-)
+	EXCLUDE_FROM_ALL)
 
 FetchContent_MakeAvailable(imgui_repo)
 

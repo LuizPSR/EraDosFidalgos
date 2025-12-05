@@ -86,7 +86,7 @@ void DoRenderTileMapSystem(const flecs::world &ecs)
 {
     auto &renderer = ecs.get_mut<Renderer>();
     auto texturePtr = new Texture();
-    texturePtr->Load(std::filesystem::path(SDL_GetBasePath()) / "Assets/Sprites/Tileset.png");
+    texturePtr->Load((std::filesystem::path(SDL_GetBasePath()) / "Assets/Sprites/Tileset.png").string());
     renderer.mTextures.insert({"mapTexture", texturePtr});
 
     ecs.system<const Province, const Renderer, const Camera, const Window>("RenderMap")

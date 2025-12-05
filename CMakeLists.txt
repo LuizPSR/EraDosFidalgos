@@ -28,7 +28,7 @@ file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "Source/*.hpp")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "Source/*.cpp")
 add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PUBLIC
         ImGui
         flecs::flecs
         SDL3::SDL3
@@ -40,12 +40,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         m) # Math
 # Provides audio for Linux
 if (ALSA_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ALSA::ALSA)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ALSA::ALSA)
 endif ()
 
+# Coloca a pasta Source nos includes
 set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 target_include_directories(${PROJECT_NAME} PUBLIC ${SOURCE_DIR})
 
+# Instala Assets e Shaders
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION .
     COMPONENT GameFiles)
@@ -56,7 +58,15 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/Shaders/
     DESTINATION Shaders
     COMPONENT GameFiles)
 
+# Coloca as DLLs na instalação
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+install(TARGETS flecs LIBRARY DESTINATION . RUNTIME DESTINATION .)
+install(TARGETS SDL3-shared LIBRARY DESTINATION . RUNTIME DESTINATION .)
+install(TARGETS SDL3_image-shared LIBRARY DESTINATION . RUNTIME DESTINATION .)
+install(TARGETS SDL3_mixer-shared LIBRARY DESTINATION . RUNTIME DESTINATION .)
+install(TARGETS glew LIBRARY DESTINATION . RUNTIME DESTINATION .)
+install(TARGETS glm LIBRARY DESTINATION . RUNTIME DESTINATION .)
+
 if (WIN32)
     target_link_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++ -static)
-    install(FILES $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> DESTINATION .)
 endif ()
