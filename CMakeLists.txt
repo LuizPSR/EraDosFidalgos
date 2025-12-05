@@ -39,8 +39,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         SDL3_mixer::SDL3_mixer
         GLEW::glew
         tomlplusplus::tomlplusplus
-        glm::glm-header-only
-        m) # Math
+        glm::glm-header-only)
+# Math
+if(NOT MSVC)
+    target_link_libraries(${PROJECT_NAME} PUBLIC m)
+endif()
 # Provides audio for Linux
 if (ALSA_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC ALSA::ALSA)
