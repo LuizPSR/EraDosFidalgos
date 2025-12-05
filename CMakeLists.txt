@@ -39,7 +39,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         SDL3_mixer::SDL3_mixer
         GLEW::glew
         tomlplusplus::tomlplusplus
-        glm::glm
+        glm::glm-header-only
         m) # Math
 # Provides audio for Linux
 if (ALSA_FOUND)
@@ -67,8 +67,6 @@ install(TARGETS flecs LIBRARY DESTINATION . RUNTIME DESTINATION .)
 install(TARGETS SDL3-shared LIBRARY DESTINATION . RUNTIME DESTINATION .)
 install(TARGETS SDL3_image-shared LIBRARY DESTINATION . RUNTIME DESTINATION .)
 install(TARGETS SDL3_mixer-shared LIBRARY DESTINATION . RUNTIME DESTINATION .)
-install(TARGETS glew LIBRARY DESTINATION . RUNTIME DESTINATION .)
-install(TARGETS glm LIBRARY DESTINATION . RUNTIME DESTINATION .)
 
 if (WIN32)
     target_link_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++ -static)
