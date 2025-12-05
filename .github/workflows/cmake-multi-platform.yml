@@ -37,7 +37,7 @@ jobs:
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
-          - os: macos-latest # <--- New entry for macOS
+          - os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
         exclude:
@@ -47,16 +47,15 @@ jobs:
             c_compiler: clang
           - os: ubuntu-latest
             c_compiler: cl
-          - os: macos-latest # <--- Exclude invalid combinations for macOS
+          - os: macos-latest
             c_compiler: gcc
-          - os: macos-latest # <--- Exclude invalid combinations for macOS
+          - os: macos-latest
             c_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Install SDL3 Dependencies (Ubuntu/Linux)
-      # This step only runs on the Linux runner (ubuntu-latest)
       if: runner.os == 'Linux'
       shell: bash
       run: |
@@ -68,7 +67,8 @@ jobs:
         libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev \
         libxss-dev libxtst-dev libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev \
         libgles2-mesa-dev libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev \
-        libthai-dev libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
+        libthai-dev libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev \
+        libglu1-mesa-dev
 
     - name: Set reusable strings and linker flags
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -91,8 +91,8 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DCMAKE_EXE_LINKER_FLAGS=${{ steps.strings.outputs.linker_flags }}
-        -DSDLIMAGE_VENDORED=OFF
+        "-DCMAKE_EXE_LINKER_FLAGS=${{ steps.strings.outputs.linker_flags }}"
+        -DSDLIMAGE_VENDORED=OFF -DSDLMIXER_VENDORED=OFF
         -S ${{ github.workspace }}
 
     - name: Build
