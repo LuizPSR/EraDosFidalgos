@@ -70,18 +70,12 @@ jobs:
         libthai-dev libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev \
         libglu1-mesa-dev
 
-    - name: Set reusable strings and linker flags
+    - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-        
-        if [[ "${{ runner.os }}" == "macOS" ]]; then
-          echo "linker_flags=-framework Cocoa -framework OpenGL -ldl" >> "$GITHUB_OUTPUT"
-        else
-          echo "linker_flags=" >> "$GITHUB_OUTPUT"
-        fi
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -91,8 +85,6 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        "-DCMAKE_EXE_LINKER_FLAGS=${{ steps.strings.outputs.linker_flags }}"
-        -DSDLIMAGE_VENDORED=OFF -DSDLMIXER_VENDORED=OFF
         -S ${{ github.workspace }}
 
     - name: Build

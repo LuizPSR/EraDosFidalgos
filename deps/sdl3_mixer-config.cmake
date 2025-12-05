@@ -7,3 +7,5 @@ FetchContent_Declare(
 	EXCLUDE_FROM_ALL)
 
 FetchContent_MakeAvailable(SDL3_mixer)
+
+target_compile_definitions(SDL3_mixer-shared PUBLIC SDLMIXER_VENDORED=OFF)

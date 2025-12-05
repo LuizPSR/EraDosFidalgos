@@ -28,6 +28,9 @@ file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "Source/*.hpp")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "Source/*.cpp")
 add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})
 
+# MSVC não define M_PI sem isso
+target_compile_definitions(${PROJECT_NAME} PRIVATE _USE_MATH_DEFINES)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
         ImGui
         flecs::flecs

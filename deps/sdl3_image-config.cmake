@@ -7,3 +7,5 @@ FetchContent_Declare(
 	EXCLUDE_FROM_ALL)
 
 FetchContent_MakeAvailable(SDL3_image)
+
+target_compile_definitions(SDL3_image-shared PUBLIC SDLIMAGE_VENDORED=OFF)

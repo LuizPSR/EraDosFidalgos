@@ -11,10 +11,8 @@ if (NOT TARGET GLEW::glew)
     
     set(GLEW_SOURCES "${glew_repo_SOURCE_DIR}/src/glew.c")
     
-    add_library(glew SHARED ${GLEW_SOURCES})
-    target_compile_options(glew PRIVATE -fPIC)
-    target_compile_definitions(glew PRIVATE GLEW_NO_GLU GLEW_BUILD)
-    target_link_options(glew PRIVATE -nostdlib)
+    add_library(glew STATIC ${GLEW_SOURCES})
+    target_compile_definitions(glew PUBLIC GLEW_NO_GLU GLEW_STATIC)
     
     target_include_directories(glew PUBLIC ${glew_repo_SOURCE_DIR}/include)
 
