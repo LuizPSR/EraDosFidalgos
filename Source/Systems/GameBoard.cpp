@@ -50,8 +50,11 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
         .with<RuledBy>("$character").src("$title")
         .with<ShowProvinceDetails>()
         .tick_source(tickTimer)
-        .each([](flecs::entity entity,  Province &province,  Title &title,  Character &character)
+        .each([](flecs::iter it, size_t i, Province &province,  Title &title,  Character &character)
         {
+            flecs::entity entity = it.entity(i);
+            flecs::entity characterEntity = it.get_var("character");
+
             bool open = true;
             const auto windowTitle = "Província Selecionada##" + std::to_string(entity.id());
             const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -70,9 +73,7 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                     //ImGui::Text("Custo de Viajem          %3.0f", province.movement_cost);
                 }
 
-
-/*
-                if ( ) {
+                if (characterEntity.has<Player>()) {
                     if (ImGui::CollapsingHeader("Construções")) {
                         ImGui::Text("Estradas");
                         ImGui::SameLine(5, 0);
@@ -86,9 +87,7 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                             province.roads_level++;
                         };
                     }
-                }*/
-
-
+                }
             }
             ImGui::End();
             if (!open) void(entity.remove<ShowProvinceDetails>());
