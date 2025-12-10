@@ -302,6 +302,17 @@ void ProcessInput(const flecs::world &ecs)
                     input.WasEscapePressed = true;
                 }
             }
+            case SDL_EVENT_KEY_DOWN:
+                if (event.key.key == SDLK_1)
+                    input.LastNumber = 1;
+                if (event.key.key == SDLK_2)
+                    input.LastNumber = 2;
+                if (event.key.key == SDLK_3)
+                    input.LastNumber = 3;
+                if (event.key.key == SDLK_4)
+                    input.LastNumber = 4;
+                if (event.key.key == SDLK_5)
+                    input.LastNumber = 5;
             default:
                 break;
         }

@@ -15,6 +15,7 @@ struct InputState
     bool Clicked = false;
     glm::vec2 MouseDelta;
     float MouseScrollAmount = 0.0f;
+    int LastNumber = 1;
 };
 
 struct GameTickSources

@@ -38,9 +38,9 @@ void GatherProvinceRevenue(const flecs::world& ecs, const GameTickSources &timer
                 {
                     province.income = // base value
                         10
-                        + 5 * province.market_level
-                        - 3 * province.temples_level
-                        - 3 * province.fortification_level
+                        + 3 * province.market_level
+                        - 2 * province.temples_level
+                        - 2 * province.fortification_level
                         - province.roads_level;
 
                     province.income =

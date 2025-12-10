@@ -50,11 +50,13 @@ void DoGameTimeSystems(const flecs::world& ecs, flecs::timer tickTimer)
         });
 
     // Controls for game speed
-    ecs.system<GameTime>()
+    ecs.system<GameTime, InputState>()
         .kind(flecs::OnUpdate)
         .tick_source(tickTimer)
-        .each([](GameTime &t)
+        .each([](GameTime &t, InputState &input)
         {
+            t.mSpeed = input.LastNumber * 6.f;
+            /*
             if (ImGui::Begin("Time Controls"))
             {
                 ImGui::Text("Day %zu %02zu:%02zu", t.TimeDays(), t.TimeHours(), t.TimeMinutes());
@@ -62,5 +64,6 @@ void DoGameTimeSystems(const flecs::world& ecs, flecs::timer tickTimer)
                 ImGui::SliderFloat("Accel", &t.mSpeedAccel, -0.5f, 0.5f, "%.2f d/s²");
             }
             ImGui::End();
+            */
         });
 }
