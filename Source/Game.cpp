@@ -138,7 +138,15 @@ void RegisterSystems(flecs::world &ecs) {
         .run([](const flecs::iter &it) {
             ProcessInput(it.world());
         });
-
+    ecs.system("CleanupOnStart")
+        .kind(flecs::OnLoad)
+        .run([](const flecs::iter &it) {
+            // Remover entidade GameOver se existir
+            auto gameOverEntity = it.world().lookup("GameOver");
+            if (gameOverEntity.is_valid()) {
+                gameOverEntity.destruct();
+            }
+        });
     ecs.system("StartFrame")
         .kind(flecs::PreUpdate)
         .run([](flecs::iter &) {

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <SDL3/SDL.h>
-
+#include "Systems/Sound.hpp"
 #include "Characters.hpp"
 #include "imgui.h"
 #include "toml++/toml.hpp"
@@ -70,6 +70,15 @@ void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers
         {
             void(entity.add<PausesGame>());
 
+            // Usar uma flag por entidade para controlar o som
+            static flecs::entity lastEntityWithSound = flecs::entity::null();
+
+            // Tocar som apenas se for uma nova entidade
+            if (lastEntityWithSound != entity) {
+                SoundModule::PlayQuestSound();
+                lastEntityWithSound = entity;
+                SDL_Log("Playing quest sound for new estate power event (entity: %zu)", entity.id());
+            }
             std::string title = "Evento de Estado##" + std::to_string(entity.id());
             ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Appearing);
             if (ImGui::Begin(title.data()))
