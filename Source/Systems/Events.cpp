@@ -6,7 +6,6 @@
 #include "Game.hpp"
 
 #include "EstatePower.hpp"
-#include "ProvinceRevenue.hpp"
 
 void CenterNextImGuiWindow()
 {
@@ -283,8 +282,6 @@ EventsModule::EventsModule(const flecs::world& ecs)
     // DoCharacterBirthSystems(ecs, timers.mTickTimer);
 
     DoSamplePopupSystem(ecs, timers.mTickTimer);
-
-    DoProvinceRevenueSystems(ecs, timers);
 
     DoCharacterAgingSystem(ecs, timers);
 

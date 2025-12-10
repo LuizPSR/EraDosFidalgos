@@ -24,6 +24,7 @@
 #include "Systems/Diplomacy.hpp"
 #include "Systems/Sound.hpp"
 #include "Systems/MapGenerator.hpp"
+#include "Systems/ProvinceUpdate.hpp"
 
 bool Initialize(flecs::world &ecs) {
     Random::Init();
@@ -140,6 +141,7 @@ void ImportModules(flecs::world& ecs) {
     void(ecs.import<GameBoardScene>().child_of(gameUI));
     void(ecs.import<EventsModule>().child_of(gameUI));
     void(ecs.import<DiplomacyModule>().child_of(gameUI));
+    void(ecs.import<ProvinceUpdates>().child_of(gameUI));
 }
 
 GameTickSources::GameTickSources(const flecs::world& ecs) {

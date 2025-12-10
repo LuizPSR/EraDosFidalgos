@@ -11,6 +11,7 @@
 
 #include "Components/Province.hpp"
 #include "Components/Culture.hpp"
+#include <SDL3/SDL.h>
 
 // Map constants
 constexpr int MAP_WIDTH = 90;
@@ -569,10 +570,11 @@ inline void RegisterMapGenerationSystem(flecs::world& world) {
 
                     province.culture = culture_map[x][y];
 
-                    province.movement_cost =    10;// base cost
-                    province.movement_cost +=  5 * (province.terrain == Plains);
-                    province.movement_cost +=  5 * (province.terrain == Mountains);
-                    province.movement_cost +=  5 * (province.biome == Forests || province.biome == Jungles);
+                    province.movement_cost = 30
+                        +  15 * (province.terrain == Plains)
+                        +  15 * (province.terrain == Mountains)
+                        +  15 * (province.roads_level == 0 && (province.biome == Forests || province.biome == Jungles))
+                        -  5 * province.roads_level;
 
                     auto& tile_data = tile.ensure<TileData>();
                     tile_data.x = x;
