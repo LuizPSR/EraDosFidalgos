@@ -79,11 +79,17 @@ void CreateKingdoms(const flecs::world &ecs);
 void RenderCharacterOverviewWindow(
     const flecs::world& ecs, const CharacterQueries& queries);
 
-void RenderCharacterRow(
+void RenderRulerRow(
     const flecs::world &ecs,
     const CharacterQueries &queries,
     const Character &character, flecs::entity ruler,
-    const Title *title, const flecs::entity *titleEntity);
+    const Title& title, flecs::entity titleEntity);
+
+void RenderDynastyMemberRow(
+    const flecs::world& ecs,
+    const CharacterQueries& queries,
+    const Character& character, flecs::entity ruler,
+    flecs::entity playerDynasty);
 
 void RenderCharacterDetailWindow(
     const flecs::world &ecs,

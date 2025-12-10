@@ -499,49 +499,62 @@ void RenderCharacterOverviewWindow(const flecs::world& ecs, const CharacterQueri
             ImGui::EndCombo();
         }
 
-        ImGui::BeginTable("RulerListCols", 3);
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn(); ImGui::Text("Nome do Rei");
-        ImGui::TableNextColumn(); ImGui::Text("Título Primário");
-        ImGui::TableNextColumn(); ImGui::Text("Ação");
-
         // Iterate through all Rulers
         if (current_item_str == items[0])
         {
+            ImGui::BeginTable("RulerListCols", 4);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("Nome");
+            ImGui::TableNextColumn(); ImGui::Text("Título Primário");
+            ImGui::TableNextColumn(); ImGui::Text("Cônjuge");
+            ImGui::TableNextColumn(); ImGui::Text("Ação");
             queries.qAllRulers
-                .each([&](flecs::iter it, size_t i, const Character &c, const Title &title)
+                .each([&](flecs::iter it, size_t i, const Character &character, const Title &title)
                 {
                     flecs::entity ruler = it.entity(i), titleEntity = it.get_var("title");
                     if (ruler == it.world().entity<Player>()) return;
-                    RenderCharacterRow(ecs, queries, c, ruler, &title, &titleEntity);
+                    RenderRulerRow(ecs, queries, character, ruler, title, titleEntity);
                 });
+            ImGui::EndTable();
         } else
         {
+            ImGui::BeginTable("RulerListCols", 3);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("Nome do Rei");
+            ImGui::TableNextColumn(); ImGui::Text("Título Primário");
+            ImGui::TableNextColumn(); ImGui::Text("Cônjuge");
             auto playerDynasty = ecs.entity<Player>().target<DynastyMember>();
             queries
                 .qMembersOfDynasty.set_var("dynasty", playerDynasty)
-                .each([&](flecs::iter it, size_t i, const Character &c)
+                .each([&](flecs::iter it, size_t i, const Character &character)
                 {
-                    RenderCharacterRow(ecs, queries, c, it.entity(i), nullptr, nullptr);
+                    RenderDynastyMemberRow(ecs, queries, character, it.entity(i), playerDynasty);
                 });
+            ImGui::EndTable();
         }
 
-        ImGui::EndTable();
     }
     ImGui::End();
 }
 
-void RenderCharacterRow(
+void RenderRulerRow(
     const flecs::world &ecs,
     const CharacterQueries &queries,
     const Character &character, const flecs::entity ruler,
-    const Title *title, const flecs::entity *titleEntity)
+    const Title& title, const flecs::entity titleEntity)
 {
-    // Get the primary Title this character rules over
-    // We reuse q_ruled_titles, scoped to the current ruler entity.
+    const Character *marriedTo = nullptr;
+    if (ruler.has<MarriedTo>(flecs::Wildcard))
+    {
+        marriedTo = &ruler
+            .target_for<Character>(ecs.component<MarriedTo>())
+            .get<Character>();
+    }
+
     ImGui::TableNextRow();
     ImGui::TableNextColumn(); ImGui::Text("%s", character.mName.c_str());
-    ImGui::TableNextColumn(); ImGui::Text("%s", title ? title->name.c_str() : "Nenhum");
+    ImGui::TableNextColumn(); ImGui::Text("%s", title.name.c_str());
+    ImGui::TableNextColumn(); ImGui::Text("%s", marriedTo ? marriedTo->mName.c_str() : "Nenhum");
 
     bool showDetails = ruler.enabled<ShowCharacterDetails>();
     // Open Detail Button
@@ -554,8 +567,32 @@ void RenderCharacterRow(
         else
             void(ruler.enable<ShowCharacterDetails>());
     }
-    if (showDetails && titleEntity)
-        RenderCharacterDetailWindow(ecs, ruler, *titleEntity, character, queries);
+    if (showDetails)
+        RenderCharacterDetailWindow(ecs, ruler, titleEntity, character, queries);
+}
+
+void RenderDynastyMemberRow(const flecs::world& ecs, const CharacterQueries& queries, const Character& character,
+    flecs::entity ruler, flecs::entity playerDynasty)
+{
+    const Character *marriedTo = nullptr;
+    if (ruler.has<MarriedTo>(flecs::Wildcard))
+    {
+        marriedTo = ruler
+            .target_for<Character>(ecs.component<MarriedTo>())
+            .try_get<Character>();
+    }
+    const Title *title = nullptr;
+    if (ruler.has<RulerOf>(flecs::Wildcard))
+    {
+        title = ruler
+            .target_for<Title>(ecs.component<RulerOf>())
+            .try_get<Title>();
+    }
+
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn(); ImGui::Text("%s", character.mName.c_str());
+    ImGui::TableNextColumn(); ImGui::Text("%s", title ? title->name.c_str() : "Nenhum");
+    ImGui::TableNextColumn(); ImGui::Text("%s", marriedTo ? marriedTo->mName.c_str() : "Nenhum");
 }
 
 // 2. Renders a detailed window for a single character entity.
