@@ -55,4 +55,6 @@ struct PregnancySaga
         BirthAnnounce,
     } stage = Attempt;
     flecs::entity father, mother, dynasty, child;
+
+    void NextStage(flecs::entity entity, const GameTime &gameTime);
 };

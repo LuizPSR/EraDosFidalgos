@@ -43,8 +43,6 @@ struct DynastyHead {};
 // Whether to show character details
 struct ShowCharacterDetails {};
 
-struct Deceased {};
-
 enum class Gender
 {
     Male, Female
@@ -52,7 +50,7 @@ enum class Gender
 
 enum class AgeClass
 {
-    Child, Adult
+    Child, Adult, Deceased
 };
 
 struct Player {};
@@ -88,7 +86,7 @@ void RenderRulerRow(
 void RenderDynastyMemberRow(
     const flecs::world& ecs,
     const CharacterQueries& queries,
-    const Character& character, flecs::entity ruler,
+    const Character& character, flecs::entity characterEntity,
     flecs::entity playerDynasty);
 
 void RenderCharacterDetailWindow(

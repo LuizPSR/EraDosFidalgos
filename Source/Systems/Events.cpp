@@ -49,68 +49,69 @@ void DoCharacterBirthSystems(const flecs::world& ecs, const flecs::timer &tickTi
     ecs.system<PregnancySaga, const GameTime>()
         .with<FiredEvent>()
         .tick_source(tickTimer)
-        .each([](flecs::iter &it, size_t i, PregnancySaga &saga, const GameTime &gameTime)
+        .each([ecs](flecs::iter &it, size_t i, PregnancySaga &saga, const GameTime &gameTime)
         {
             const auto &entity = it.entity(i);
             auto *father = saga.father.try_get<Character>();
             auto *mother = saga.mother.try_get<Character>();
             if (father == nullptr || mother == nullptr) return entity.destruct();
+            auto dynasty = saga.father.target<DynastyMember>();
+            auto playerDynasty = ecs.entity<Player>().target<DynastyMember>();
 
             switch (saga.stage)
             {
             case PregnancySaga::Attempt:
                 {
-                    // TODO: make random deterministic
-                    if (Random::GetFloat() < 0.2f)
-                    {
-                        saga.stage = PregnancySaga::Announce;
-                    }
-                    void(entity.remove<PausesGame>()
-                        .remove<FiredEvent>()
-                        .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30)));
+                    saga.NextStage(entity, gameTime);
                 }
                 break;
             case PregnancySaga::Announce:
                 {
-                    void(entity.add<PausesGame>());
-                    auto name = "Evento - Gravidez##" + std::to_string(entity.id());
-                    CenterNextImGuiWindow();
-                    if (ImGui::Begin(name.data()))
+                    if (dynasty == playerDynasty)
                     {
-                        ImGui::Text("%s e %s vão ter uma criança.", father->mName.data(), mother->mName.data());
-                        if (ImGui::Button("Close"))
+                        void(entity.add<PausesGame>());
+                        auto name = "Evento - Gravidez##" + std::to_string(entity.id());
+                        CenterNextImGuiWindow();
+                        if (ImGui::Begin(name.data()))
                         {
-                            saga.stage = PregnancySaga::Birth;
-                            // TODO: make random deterministic
-                            int variation = Random::GetIntRange(30, 60);
-                            void(entity.remove<PausesGame>()
-                                .remove<FiredEvent>()
-                                .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30 * 7 + variation)));
+                            ImGui::Text("%s e %s, da sua dinastia, vão ter uma criança.", father->mName.data(), mother->mName.data());
+                            if (ImGui::Button("Close"))
+                            {
+                                saga.NextStage(entity, gameTime);
+                            }
                         }
+                        ImGui::End();
+                    } else
+                    {
+                        saga.NextStage(entity, gameTime);
                     }
-                    ImGui::End();
                     break;
                 }
             case PregnancySaga::Birth:
                 {
-                    saga.child = BirthChildCharacter(it.world(), *father, *mother, saga.dynasty);
-                    saga.stage = PregnancySaga::BirthAnnounce;
+                    saga.NextStage(entity, gameTime);
                 }
             case PregnancySaga::BirthAnnounce:
                 {
-                    void(entity.add<PausesGame>());
-                    auto name = "Evento - Nascimento##" + std::to_string(entity.id());
-                    const auto *child = saga.child.try_get<Character>();
-                    CenterNextImGuiWindow();
-                    if (ImGui::Begin(name.data()))
+                    if (dynasty == playerDynasty)
                     {
-                       ImGui::Text("O filho de %s e %s nasceu: %s", father->mName.data(), mother->mName.data(), child ? child->mName.data() : nullptr);
-                       if (ImGui::Button("Close"))
-                       {
-                           void(entity.destruct());
-                       }
+                        void(entity.add<PausesGame>());
+                        auto name = "Evento - Nascimento##" + std::to_string(entity.id());
+                        const auto *child = saga.child.try_get<Character>();
+                        CenterNextImGuiWindow();
+                        if (ImGui::Begin(name.data()))
+                        {
+                           ImGui::Text("O filho de %s e %s nasceu: %s", father->mName.data(), mother->mName.data(), child ? child->mName.data() : nullptr);
+                           if (ImGui::Button("Close"))
+                           {
+                               saga.NextStage(entity, gameTime);
+                           }
+                        }
+                        ImGui::End();
+                    } else
+                    {
+                        saga.NextStage(entity, gameTime);
                     }
-                    ImGui::End();
                     break;
                 }
             }
@@ -210,7 +211,7 @@ void DoCharacterAgingSystem(const flecs::world& ecs, const GameTickSources& time
         {
             if (character.mAgeDays < 360 * 60) return;
             // TODO: add a timeout to death
-            if (Random::GetFloat() < 0.2f) void(e.add<Deceased>());
+            if (Random::GetFloat() < 0.2f) void(e.set(AgeClass::Deceased));
         });
 
     ecs.system<Character, const GameTime>()
@@ -218,8 +219,10 @@ void DoCharacterAgingSystem(const flecs::world& ecs, const GameTickSources& time
         .each([](flecs::entity e, Character &character, const GameTime &gameTime)
         {
             character.mAgeDays += gameTime.CountDayChanges();
-            if (!e.has(AgeClass::Adult) && character.mAgeDays > 16 * 360)
-                void(e.add(AgeClass::Adult));
+            if (character.mAgeDays <= 16 * 360)
+                void(e.set(AgeClass::Child));
+            else if (!e.has(AgeClass::Deceased))
+                void(e.set(AgeClass::Adult));
         });
 }
 
@@ -228,7 +231,7 @@ void DoGameOverEvents(const flecs::world& ecs, const GameTickSources& timers)
     // Sistema para morte do jogador
     ecs.system<const Character>()
         .entity(ecs.entity<Player>())
-        .with<Deceased>()
+        .with(AgeClass::Deceased)
         .tick_source(timers.mTickTimer)
         .each([&ecs](flecs::entity entity, const Character &character)
         {
@@ -343,7 +346,7 @@ EventsModule::EventsModule(const flecs::world& ecs)
 
     // DoAdultMarriageSystems(ecs, timers.mTickTimer);
 
-    // DoCharacterBirthSystems(ecs, timers.mTickTimer);
+    DoCharacterBirthSystems(ecs, timers.mTickTimer);
 
     DoSamplePopupSystem(ecs, timers.mTickTimer);
 
@@ -352,4 +355,39 @@ EventsModule::EventsModule(const flecs::world& ecs)
     DoEstatePowerSystems(ecs, timers);
 
     DoGameOverEvents(ecs, timers);
+}
+
+void PregnancySaga::NextStage(flecs::entity entity, const GameTime &gameTime)
+{
+    switch (stage)
+    {
+    case Attempt:
+        // TODO: make random deterministic
+        if (Random::GetFloat() < 0.2f)
+        {
+            stage = PregnancySaga::Announce;
+        }
+        void(entity.remove<PausesGame>()
+            .remove<FiredEvent>()
+            .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30)));
+        break;
+    case Announce:
+        {
+            stage = PregnancySaga::Birth;
+            // TODO: make random deterministic
+            int variation = Random::GetIntRange(30, 60);
+            void(entity.remove<PausesGame>()
+                .remove<FiredEvent>()
+                .set<EventSchedule>(EventSchedule::InXDays(gameTime, 30 * 7 + variation)));
+        }
+        break;
+    case Birth:
+        child = BirthChildCharacter(entity.world(), father.get<Character>(), mother.get<Character>(), dynasty);
+        stage = PregnancySaga::BirthAnnounce;
+        break;
+    case BirthAnnounce:
+        void(entity.destruct());
+        break;
+    default: ;
+    }
 }
