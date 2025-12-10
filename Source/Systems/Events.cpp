@@ -90,6 +90,7 @@ void DoCharacterBirthSystems(const flecs::world& ecs, const flecs::timer &tickTi
             case PregnancySaga::Birth:
                 {
                     saga.NextStage(entity, gameTime);
+                    break;
                 }
             case PregnancySaga::BirthAnnounce:
                 {
@@ -97,15 +98,20 @@ void DoCharacterBirthSystems(const flecs::world& ecs, const flecs::timer &tickTi
                     {
                         void(entity.add<PausesGame>());
                         auto name = "Evento - Nascimento##" + std::to_string(entity.id());
-                        const auto *child = saga.child.try_get<Character>();
+                        auto &child = saga.child.get_mut<Character>();
                         CenterNextImGuiWindow();
                         if (ImGui::Begin(name.data()))
                         {
-                           ImGui::Text("O filho de %s e %s nasceu: %s", father->mName.data(), mother->mName.data(), child ? child->mName.data() : nullptr);
-                           if (ImGui::Button("Close"))
-                           {
-                               saga.NextStage(entity, gameTime);
-                           }
+                            ImGui::Text("O filho de %s e %s nasceu: %s", father->mName.data(), mother->mName.data(), child.mName.data());
+                            if (saga.nameBuffer[0] == '\0') strncpy(saga.nameBuffer, child.mName.c_str(), 200);
+                            if (ImGui::InputText("Nome", saga.nameBuffer, 256))
+                            {
+                                child.mName = saga.nameBuffer;
+                            }
+                            if (ImGui::Button("Close"))
+                            {
+                                saga.NextStage(entity, gameTime);
+                            }
                         }
                         ImGui::End();
                     } else

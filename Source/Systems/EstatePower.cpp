@@ -53,7 +53,7 @@ void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers
         .run([=](const flecs::iter &it)
         {
             const auto &ecs = it.world();
-            if (Random::GetFloat() < 1.f)
+            if (Random::GetFloat() < 0.2f)
             {
                 auto event = powerEvents[Random::GetIntRange(0, powerEvents.size() - 1)];
                 void(ecs.entity()

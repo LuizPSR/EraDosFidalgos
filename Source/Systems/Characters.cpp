@@ -45,16 +45,18 @@ struct CharacterBuilder
         const flecs::entity& dynasty_entity,
         bool isMale,
         flecs::entity baseEntity,
-        CultureType culture
+        CultureType culture,
+        uint32_t ageDays = 20 * 360
         ) const;
     flecs::entity CreateCharacter(
         const std::string& char_name,
         const flecs::entity& dynasty_entity,
         bool isMale,
-        CultureType culture
+        CultureType culture,
+        uint32_t ageDays = 20 * 360
         ) const
     {
-        return CreateCharacter(char_name, dynasty_entity, isMale, ecs.entity(), culture);
+        return CreateCharacter(char_name, dynasty_entity, isMale, ecs.entity(), culture, ageDays);
     }
 };
 
@@ -63,14 +65,14 @@ flecs::entity CharacterBuilder::CreateCharacter(
     const flecs::entity& dynasty_entity,
     bool isMale,
     flecs::entity baseEntity,
-    CultureType culture
-    ) const
+    CultureType culture,
+    uint32_t ageDays) const
 {
     flecs::entity character = baseEntity
         .set<Character>({
             .mName = char_name,
             .mMoney = 4971,
-            .mAgeDays = 20 * 360,
+            .mAgeDays = ageDays,
         });
 
     if (dynasty_entity.is_valid())
@@ -678,7 +680,7 @@ flecs::entity BirthChildCharacter(const flecs::world& ecs, const Character& fath
     const auto &builder = ecs.get<CharacterBuilder>();
     bool isMale = Random::GetIntRange(0, 1);
     auto name = isMale ? builder.GenMaleName() : builder.GenFemaleName();
-    auto child = builder.CreateCharacter(name, dynasty, isMale,dynasty.get<CharacterCulture>().culture);
+    auto child = builder.CreateCharacter(name, dynasty, isMale,dynasty.get<CharacterCulture>().culture, 0);
     void(ecs.set_scope(oldScope));
 
     return child;
