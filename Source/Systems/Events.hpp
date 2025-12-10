@@ -8,10 +8,9 @@
 // TODO: initialize this entity in game
 struct EventsRng: Random {};
 
-struct EventsSampleScene
+struct EventsModule
 {
-    explicit EventsSampleScene(const flecs::world &ecs);
-    static void InitializeEntities(const flecs::world &ecs);
+    explicit EventsModule(const flecs::world &ecs);
 };
 
 struct EventSchedule

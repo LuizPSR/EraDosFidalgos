@@ -14,13 +14,14 @@
 // UI Screens
 #include "UI/UIScreens/MainMenu.hpp"
 #include "UI/UIScreens/PauseMenu.hpp"
-#include "UI/UIScreens/GameUI.hpp"
+#include "UI/UIScreens/GameUIModule.hpp"
 #include "UI/UIScreens/UICommon.hpp" // Adicionar este include
 
 // Systems
 #include "Systems/GameBoard.hpp"
 #include "Systems/Events.hpp"
 #include "Systems/Characters.hpp"
+#include "Systems/Diplomacy.hpp"
 #include "Systems/Sound.hpp"
 #include "Systems/MapGenerator.hpp"
 
@@ -129,15 +130,16 @@ void ImportModules(flecs::world& ecs) {
     // UI Modules - VOLTAR AO FORMATO ORIGINAL
     void(ecs.import<MainMenuModule>());
     void(ecs.import<PauseMenuModule>().disable());
-    void(ecs.import<TestUIModule>().disable());
+    void(ecs.import<GameUIModule>().disable());
 
-    flecs::entity testUI = ecs.entity<TestUIModule>();
+    flecs::entity gameUI = ecs.entity<GameUIModule>();
 
     // Game Systems - VOLTAR AO FORMATO ORIGINAL
     void(ecs.import<SoundModule>().disable());
-    void(ecs.import<CharactersModule>().child_of(testUI));
-    void(ecs.import<GameBoardScene>().child_of(testUI));
-    void(ecs.import<EventsSampleScene>().child_of(testUI));
+    void(ecs.import<CharactersModule>().child_of(gameUI));
+    void(ecs.import<GameBoardScene>().child_of(gameUI));
+    void(ecs.import<EventsModule>().child_of(gameUI));
+    void(ecs.import<DiplomacyModule>().child_of(gameUI));
 }
 
 GameTickSources::GameTickSources(const flecs::world& ecs) {

@@ -27,7 +27,14 @@ void renderPoliticalMap(flecs::iter &it)
         verts->SetActive();
 
         const auto &provinces = it.field<const Province>(0);
-        const auto &title = it.field_at<const Title>(1, 0);
+
+        auto titleEntity = it.get_var("title");
+        while (auto inRealm = titleEntity.target<InRealm>())
+        {
+            if (!inRealm.is_valid() || !inRealm.has<const Title>()) break;
+            titleEntity = inRealm;
+        }
+        const auto &title = titleEntity.get<const Title>();
 
         for (size_t i: it)
         {

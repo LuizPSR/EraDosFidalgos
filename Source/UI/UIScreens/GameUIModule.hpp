@@ -2,8 +2,8 @@
 #include <flecs.h>
 #include "Game.hpp"
 
-struct TestUIModule {
-    explicit TestUIModule(flecs::world &ecs);
+struct GameUIModule {
+    explicit GameUIModule(flecs::world &ecs);
 
     static void ShowTestUI(const flecs::world& ecs, GameTickSources& tickSources);
 };

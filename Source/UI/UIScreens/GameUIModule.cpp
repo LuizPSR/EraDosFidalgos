@@ -1,17 +1,14 @@
 
-#include "GameUI.hpp"
+#include "GameUIModule.hpp"
 #include <imgui.h>
 
+#include "PauseMenu.hpp"
 #include "Components/Dynasty.hpp"
 #include "Systems/GameBoard.hpp"
 #include "Systems/Characters.hpp"
 #include "Systems/EstatePower.hpp" // Adicionar este include
 #include "Renderer/Renderer.hpp"
 #include "Renderer/Texture.hpp"
-
-static flecs::entity GetEntityByName(const flecs::world& ecs, const std::string& name) {
-    return ecs.lookup(name.c_str());
-}
 
 // Variáveis para o popup do personagem
 static Texture* characterTexture = nullptr;
@@ -83,7 +80,7 @@ static ImU32 GetPowerColor(int power) {
     return IM_COL32(200, 50, 50, 255);                     // Vermelho - muito desfavorável
 }
 
-TestUIModule::TestUIModule(flecs::world& ecs) {
+GameUIModule::GameUIModule(flecs::world& ecs) {
     const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
 
     ecs.system<GameTickSources>("UpdateUI")
@@ -94,12 +91,12 @@ TestUIModule::TestUIModule(flecs::world& ecs) {
         });
 }
 
-void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSources) {
+void GameUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSources) {
     auto input = ecs.try_get<InputState>();
     if (input && input->WasEscapePressed) {
         tickSources.mTickTimer.stop();
-        auto pauseMenuEntity = GetEntityByName(ecs, "PauseMenuModule");
-        auto testUIEntity = GetEntityByName(ecs, "TestUIModule");
+        auto pauseMenuEntity = ecs.entity<PauseMenuModule>();
+        auto testUIEntity = ecs.entity<GameUIModule>();
 
         if (pauseMenuEntity.is_valid()) pauseMenuEntity.enable();
         if (testUIEntity.is_valid()) testUIEntity.disable();

@@ -16,7 +16,7 @@
 // TODO: make random deterministic
 #include "GameTime.hpp"
 #include "Random.hpp"
-#include "UI/UIScreens/GameUI.hpp"
+#include "UI/UIScreens/GameUIModule.hpp"
 
 struct EntityHandler {
     flecs::entity ruler;
@@ -154,7 +154,7 @@ EntityHandler CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer)
 
     auto rulerName = GenMaleName();
     auto ruler = CreateCharacter(rulerName, dynasty, true, isPlayer ? ecs.entity<Player>() : ecs.entity(), culture)
-    .add<DynastyHead>(dynasty).add<CharacterCulture>(culture);
+        .add<DynastyHead>(dynasty).add<CharacterCulture>(culture);
     void(kingdom.add<RuledBy>(ruler));
 
     void(ruler.add<RulerOf>(kingdom));
