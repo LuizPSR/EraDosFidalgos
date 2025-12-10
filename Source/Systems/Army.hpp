@@ -11,7 +11,8 @@ struct ProvinceArmy
     uint32_t mAmount;
 };
 
-struct SelectingTarget
+struct MovingArmies
 {
-    uint32_t mAmount;
+    flecs::entity mProvince;
+    int mAmount;
 };

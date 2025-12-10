@@ -1,11 +1,13 @@
 #include "DrawProvinces.hpp"
 
+#include <algorithm>
 #include <SDL3/SDL.h>
 #include <GL/glew.h>
 #include <flecs.h>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+#include "Army.hpp"
 #include "Characters.hpp"
 #include "Diplomacy.hpp"
 #include "imgui.h"
@@ -137,6 +139,42 @@ void renderDiplomacyMap(flecs::iter &it, flecs::entity playerRealm)
     }
 }
 
+void renderArmyMap(flecs::iter &it)
+{
+    while (it.next())
+    {
+        const auto &renderer = it.field_at<const Renderer>(2, 0);
+        const auto &camera = it.field_at<const Camera>(3, 0);
+        const auto &window = it.field_at<const Window>(4, 0);
+
+        const auto &shader = renderer.mHeatMapShader;
+        const auto &verts = renderer.mSpriteVerts;
+        shader->SetActive();
+        verts->SetActive();
+
+        const auto &provinces = it.field<const Province>(0);
+        for (size_t i: it)
+        {
+            const auto &province = provinces[i];
+            const auto &army = it.entity(i).get<ProvinceArmy>();
+
+            glm::mat4 model = glm::translate(
+                            glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f) * TILE_SIZE_WORLD),
+                            glm::vec3(province.mPosX, province.mPosY, 0.0f));
+
+            shader->SetMatrixUniform("uView", camera.mView);
+            shader->SetMatrixUniform("uProj", camera.CalculateProjection(window));
+            shader->SetMatrixUniform("uModel", model);
+            shader->SetVectorUniform("uMousePos", window.GetMousePosNDC());
+            shader->SetVectorUniform("uMinColor", glm::vec4(0.0, 0.0, 0.0, 1.0));
+            shader->SetVectorUniform("uMaxColor", glm::vec4(1.0, 0.0, 0.0, 1.0));
+            shader->SetFloatUniform("uPercent", std::clamp<float>(army.mAmount / 100.0f, 0.0, 1.0));
+
+            glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
+        }
+    }
+}
+
 void RenderTileMap(flecs::iter &it)
 {
     while (it.next())
@@ -240,6 +278,7 @@ void DoRenderTileMapSystem(const flecs::world &ecs)
             case MapMode::Political: renderPoliticalMap(it); break;
             case MapMode::Cultural: renderCultureMap(it); break;
             case MapMode::Diplomatic: renderDiplomacyMap(it, qPlayerRealm.first()); break;
+            case MapMode::Army: renderArmyMap(it); break;
             }
         });
 
@@ -253,6 +292,7 @@ void DoRenderTileMapSystem(const flecs::world &ecs)
                 ImGui::RadioButton("Politico", &mapModeInt, (int)MapMode::Political);
                 ImGui::RadioButton("Cultural", &mapModeInt, (int)MapMode::Cultural);
                 ImGui::RadioButton("Diplomático", &mapModeInt, (int)MapMode::Diplomatic);
+                ImGui::RadioButton("Exército", &mapModeInt, (int)MapMode::Army);
                 mapMode = (MapMode)mapModeInt;
             }
             ImGui::End();

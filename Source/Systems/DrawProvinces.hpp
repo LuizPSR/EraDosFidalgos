@@ -8,4 +8,5 @@ enum class MapMode
     Political,
     Cultural,
     Diplomatic,
+    Army,
 };

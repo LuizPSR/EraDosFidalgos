@@ -32,27 +32,27 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
             if (input.Clicked) void(entity.add<ShowProvinceDetails>());
         });
 
-    ecs.system<const Province, const Title>("HoverProvinceName")
-        .term_at(1).src("$title")
+    ecs.system<const Province, const ProvinceArmy, const Title>("HoverProvinceName")
+        .term_at(2).src("$title")
         .with<Hovered>()
         .with<InRealm>("$title")
         .tick_source(tickTimer)
-        .each([](const Province &province, const Title &title)
+        .each([](const Province &province, const ProvinceArmy &army, const Title &title)
         {
             if (ImGui::GetIO().WantCaptureMouse) return;
             ImGui::BeginTooltip();
-            ImGui::Text("%s - %s (%zu, %zu)", province.name.data(), title.name.data(), province.mPosX, province.mPosY);
+            ImGui::Text("%s - %s (%zu, %zu) (%u Tropas)", province.name.data(), title.name.data(), province.mPosX, province.mPosY, army.mAmount);
             ImGui::EndTooltip();
         });
 
-    ecs.system<Province, const Title, Character>("ShowProvinceDetails")
-        .term_at(1).src("$title")
-        .term_at(2).src("$character")
+    ecs.system<Province, ProvinceArmy, const Title, Character>("ShowProvinceDetails")
+        .term_at(2).src("$title")
+        .term_at(3).src("$character")
         .with<InRealm>("$title")
         .with<RuledBy>("$character").src("$title")
         .with<ShowProvinceDetails>()
         .tick_source(tickTimer)
-        .each([](flecs::iter it, size_t i, Province &province, const Title &title, Character &character)
+        .each([ecs](flecs::iter it, size_t i, Province &province, ProvinceArmy &army, const Title &title, Character &character)
         {
             flecs::entity entity = it.entity(i);
             flecs::entity characterEntity = it.get_var("character");
@@ -66,23 +66,17 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                 ImGui::Text("Nome: %s", province.name.data());
                 ImGui::Text("Parte de: %s", title.name.data());
                 ImGui::Text("Governada por: %s", character.mName.data());
+                ImGui::Text("%d tropas estacionadas", army.mAmount);
 
                 if (ImGui::CollapsingHeader("Situação Local")) {
-                    ImGui::Text("Desenvolvimento          %3u", province.development);
-                    ImGui::Text("Controle                 %3u", province.control);
+                    ImGui::Text("Desenvolvimento          %3lu", province.development);
+                    ImGui::Text("Controle                 %3lu", province.control);
                     ImGui::Text("Opinião Pública          %3d", province.popular_opinion);
                     //ImGui::Text("Distancia da Capital     %3d", province.distance_to_capital);
                     //ImGui::Text("Custo de Viajem          %3.0f", province.movement_cost);
                 }
 
                 if (characterEntity.has<Player>()) {
-                    if (ImGui::Button("Mover Exércitos"))
-                    {
-                        void(entity.set<SelectingTarget>({
-                            .mAmount = 0,
-                        }));
-                    }
-
                     if (ImGui::CollapsingHeader("Construções")) {
                         ImGui::Text("Estradas");
                         ImGui::SameLine();
@@ -95,6 +89,19 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                             character.mMoney -= BUILDING_COST;
                             province.roads_level++;
                         };
+                    }
+
+                    if (ImGui::Button("Mover Exércitos"))
+                    {
+                        ecs.entity<MovingArmies>().set<MovingArmies>({
+                            .mProvince = entity,
+                            .mAmount = 0,
+                        });
+                    }
+                    if (ImGui::Button("Comprar Tropas"))
+                    {
+                        character.mMoney -= 100;
+                        army.mAmount += 1;
                     }
                 }
             }
