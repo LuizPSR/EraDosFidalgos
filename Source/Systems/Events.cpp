@@ -198,7 +198,6 @@ void DoSamplePopupSystem(const flecs::world& ecs, flecs::timer tickTimer)
             CenterNextImGuiWindow();
             if (ImGui::Begin(name.c_str(), nullptr, ImGuiWindowFlags_NoDocking))
             {
-                ImGui::Text("ID %zu", e.id());
                 ImGui::Text("%s", p.mMessage.c_str());
                 if (ImGui::Button("Close me"))
                 {

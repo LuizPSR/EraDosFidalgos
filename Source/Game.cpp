@@ -103,6 +103,13 @@ void RegisterSystems(flecs::world &ecs) {
             void(ecs.add<GameTime>());
             void(ecs.add<EstatePowers>());
             void(ecs.add<Camera>());
+            void(ecs.entity().child_of(ecs.entity("Events"))
+                .set<SamplePopup>({
+                    .mMessage = "Bem Vindo ao Era dos Fidalgos!\n"
+                        "O objetivo do jogo é balancear os estados internos de seu reino, não deixe que cheguem a -100 ou +100 de influência.\n"
+                        "Além disso, deve cuidar da diplomacia de seu reino, e pode mover exércitos pelo mapa para conquistar novos territórios.\n"
+                        "A cada ano, recebe uma renda de suas provincias. Boa sorte!" })
+                .add<FiredEvent>());
             GenerateMap(ecs, 36533);
             CreateKingdoms(ecs);
             void(ecs.set_scope(oldScope));
