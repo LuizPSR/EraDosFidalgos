@@ -549,9 +549,7 @@ void RenderRulerRow(
     const Character *marriedTo = nullptr;
     if (ruler.has<MarriedTo>(flecs::Wildcard))
     {
-        marriedTo = &ruler
-            .target_for<Character>(ecs.component<MarriedTo>())
-            .get<Character>();
+        marriedTo = ruler.target<MarriedTo>().try_get<Character>();
     }
 
     ImGui::TableNextRow();
@@ -580,9 +578,7 @@ void RenderDynastyMemberRow(const flecs::world& ecs, const CharacterQueries& que
     const Character *marriedTo = nullptr;
     if (characterEntity.has<MarriedTo>(flecs::Wildcard))
     {
-        marriedTo = characterEntity
-            .target_for<Character>(ecs.component<MarriedTo>())
-            .try_get<Character>();
+        marriedTo = characterEntity.target<MarriedTo>().try_get<Character>();
     }
     const Title *title = nullptr;
     if (characterEntity.has<RulerOf>(flecs::Wildcard))

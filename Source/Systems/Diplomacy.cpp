@@ -110,8 +110,7 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
         .each([](flecs::entity entity, const DiploEvent &event)
         {
             std::string title = event.mTitle + "##" + std::to_string(entity.id());
-            ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Appearing);
-            if (ImGui::Begin(title.data()))
+            if (ImGui::Begin(title.data(), 0, ImGuiWindowFlags_AlwaysAutoResize))
             {
                 ImGui::TextWrapped("%s", event.mMessage.data());
                 for (const auto &choice: event.mChoices)
