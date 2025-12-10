@@ -70,12 +70,20 @@ struct CharacterQueries
     flecs::query<const Character, const Title> qAllRulers;
     // Finds all provinces under a title
     flecs::query<const Province, const Title> qProvincesOfTitle;
+    // Find all characters belonging to a dynasty
+    flecs::query<const Character> qMembersOfDynasty;
 };
 
 void CreateKingdoms(const flecs::world &ecs);
 
 void RenderCharacterOverviewWindow(
     const flecs::world& ecs, const CharacterQueries& queries);
+
+void RenderCharacterRow(
+    const flecs::world &ecs,
+    const CharacterQueries &queries,
+    const Character &character, flecs::entity ruler,
+    const Title *title, const flecs::entity *titleEntity);
 
 void RenderCharacterDetailWindow(
     const flecs::world &ecs,

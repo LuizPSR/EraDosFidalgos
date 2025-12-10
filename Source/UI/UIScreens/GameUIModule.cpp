@@ -156,6 +156,12 @@ void GameUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
         glm::vec2 mPos;
         SDL_GetRelativeMouseState(&mPos.x, &mPos.y);
         ImGui::Text("Mouse Relative: %.1f %.1f", mPos.x, mPos.y);
+        ImGui::Separator();
+
+        auto &powers = ecs.get_mut<EstatePowers>();
+        int32_t commonersPower = powers.mCommonersPower;
+        ImGui::InputInt("Plebe", &commonersPower, 1, 10);
+        powers.mCommonersPower = commonersPower;
     }
     ImGui::End();
 

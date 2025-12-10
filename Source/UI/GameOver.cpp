@@ -7,6 +7,8 @@
 #include "Renderer/Texture.hpp"
 #include "Systems/Characters.hpp"
 #include "UI/UIScreens/UICommon.hpp"
+#include "UIScreens/GameUIModule.hpp"
+#include "UIScreens/PauseMenu.hpp"
 
 // Variáveis estáticas para armazenar as informações do game over
 namespace {
@@ -323,10 +325,10 @@ void GameOverModule::ShowGameOverScreen(const flecs::world& ecs, GameTickSources
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
         if (ImGui::Button("NOVO REINO", ImVec2(buttonWidth, buttonHeight))) {
-            auto gameOverEntity = UICommon::GetEntityByName(ecs, "GameOverModule");
-            auto mainMenuEntity = ecs.lookup("MainMenuModule");
-            auto testUIEntity = UICommon::GetEntityByName(ecs, "TestUIModule");
-            auto pauseMenuEntity = UICommon::GetEntityByName(ecs, "PauseMenuModule");
+            auto gameOverEntity = ecs.entity<GameOverModule>();
+            auto mainMenuEntity = ecs.entity<MainMenuModule>();
+            auto testUIEntity = ecs.entity<GameUIModule>();
+            auto pauseMenuEntity = ecs.entity<PauseMenuModule>();
 
             // Desativar todas as UIs de jogo
             if (gameOverEntity.is_valid()) gameOverEntity.disable();

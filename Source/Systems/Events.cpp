@@ -8,7 +8,7 @@
 #include "EstatePower.hpp"
 #include "Components/Dynasty.hpp"
 #include "UI/GameOver.hpp"
-#include "UI/UIScreens/UICommon.hpp"
+#include "UI/UIScreens/GameUIModule.hpp"
 
 void CenterNextImGuiWindow()
 {
@@ -268,8 +268,8 @@ void DoGameOverEvents(const flecs::world& ecs, const GameTickSources& timers)
             );
 
             // Desativar UI do jogo e ativar tela de game over
-            auto testUIEntity = UICommon::GetEntityByName(ecs, "TestUIModule");
-            auto gameOverEntity = UICommon::GetEntityByName(ecs, "GameOverModule");
+            auto testUIEntity = ecs.entity<GameUIModule>();
+            auto gameOverEntity = ecs.entity<GameOverModule>();
 
             if (testUIEntity.is_valid()) testUIEntity.disable();
             if (gameOverEntity.is_valid()) gameOverEntity.enable();
@@ -322,8 +322,8 @@ void DoGameOverEvents(const flecs::world& ecs, const GameTickSources& timers)
             );
 
             // Desativar UI do jogo e ativar tela de game over
-            auto testUIEntity = UICommon::GetEntityByName(it.world(), "TestUIModule");
-            auto gameOverEntity = UICommon::GetEntityByName(it.world(), "GameOverModule");
+            auto testUIEntity = it.world().entity<GameUIModule>();
+            auto gameOverEntity = it.world().entity<GameOverModule>();
 
             if (testUIEntity.is_valid()) testUIEntity.disable();
             if (gameOverEntity.is_valid()) gameOverEntity.enable();

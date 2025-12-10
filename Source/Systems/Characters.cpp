@@ -231,6 +231,9 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
             .term_at(1).src("$title")
             .with<InRealm>("$title").src("$this")
             .build(),
+        .qMembersOfDynasty = ecs.query_builder<const Character>("qMembersOfDynasty")
+            .with<DynastyMember>("$dynasty")
+            .build(),
     };
 
     ecs.system<>()
@@ -481,6 +484,24 @@ void RenderCharacterOverviewWindow(const flecs::world& ecs, const CharacterQueri
 {
     if (ImGui::Begin("Resumo de Personagens"))
     {
+        static const char* items[] = {
+            "Todos",
+            "Dinastia"
+        };
+        static const char* current_item_str = items[0];
+        if (ImGui::BeginCombo("##custom_combo", current_item_str)) // "##" hides the label
+        {
+            for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+            {
+                bool is_selected = (current_item_str == items[n]);
+                if (ImGui::Selectable(items[n], is_selected))
+                    current_item_str = items[n];
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
         ImGui::BeginTable("RulerListCols", 3);
         ImGui::TableNextRow();
         ImGui::TableNextColumn(); ImGui::Text("Nome do Rei");
@@ -488,38 +509,56 @@ void RenderCharacterOverviewWindow(const flecs::world& ecs, const CharacterQueri
         ImGui::TableNextColumn(); ImGui::Text("Ação");
 
         // Iterate through all Rulers
-        queries.qAllRulers
-            .each([&](flecs::iter it, size_t i, const Character &c, const Title &title)
-            {
-                flecs::entity ruler = it.entity(i), titleEntity = it.get_var("title");
-                if (ruler == it.world().entity<Player>()) return;
-
-                // Get the primary Title this character rules over
-                // We reuse q_ruled_titles, scoped to the current ruler entity.
-                std::string title_name = title.name;
-
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text("%s", c.mName.c_str());
-                ImGui::TableNextColumn(); ImGui::Text("%s", title_name.c_str());
-
-                bool showDetails = ruler.enabled<ShowCharacterDetails>();
-                // Open Detail Button
-                ImGui::TableNextColumn();
-                std::string button_label = "Details##" + std::to_string(ruler.id());
-                if (ImGui::Button(button_label.c_str()))
+        if (current_item_str == items[0])
+        {
+            queries.qAllRulers
+                .each([&](flecs::iter it, size_t i, const Character &c, const Title &title)
                 {
-                    if (showDetails)
-                        void(ruler.disable<ShowCharacterDetails>());
-                    else
-                        void(ruler.enable<ShowCharacterDetails>());
-                }
-                if (showDetails)
-                    RenderCharacterDetailWindow(ecs, ruler, titleEntity, c, queries);
-            });
+                    flecs::entity ruler = it.entity(i), titleEntity = it.get_var("title");
+                    if (ruler == it.world().entity<Player>()) return;
+                    RenderCharacterRow(ecs, queries, c, ruler, &title, &titleEntity);
+                });
+        } else
+        {
+            auto playerDynasty = ecs.entity<Player>().target<DynastyMember>();
+            queries
+                .qMembersOfDynasty.set_var("dynasty", playerDynasty)
+                .each([&](flecs::iter it, size_t i, const Character &c)
+                {
+                    RenderCharacterRow(ecs, queries, c, it.entity(i), nullptr, nullptr);
+                });
+        }
 
         ImGui::EndTable();
     }
     ImGui::End();
+}
+
+void RenderCharacterRow(
+    const flecs::world &ecs,
+    const CharacterQueries &queries,
+    const Character &character, const flecs::entity ruler,
+    const Title *title, const flecs::entity *titleEntity)
+{
+    // Get the primary Title this character rules over
+    // We reuse q_ruled_titles, scoped to the current ruler entity.
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn(); ImGui::Text("%s", character.mName.c_str());
+    ImGui::TableNextColumn(); ImGui::Text("%s", title ? title->name.c_str() : "Nenhum");
+
+    bool showDetails = ruler.enabled<ShowCharacterDetails>();
+    // Open Detail Button
+    ImGui::TableNextColumn();
+    std::string button_label = "Details##" + std::to_string(ruler.id());
+    if (ImGui::Button(button_label.c_str()))
+    {
+        if (showDetails)
+            void(ruler.disable<ShowCharacterDetails>());
+        else
+            void(ruler.enable<ShowCharacterDetails>());
+    }
+    if (showDetails && titleEntity)
+        RenderCharacterDetailWindow(ecs, ruler, *titleEntity, character, queries);
 }
 
 // 2. Renders a detailed window for a single character entity.
