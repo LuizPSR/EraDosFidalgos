@@ -23,24 +23,34 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
         .without<InRealm>(flecs::Wildcard)
         .build();
 
-    void(ecs.system<const TileMap>("UpdateNeighbors")
+    void(ecs.system<const Province, const TileMap>("UpdateNeighbors")
+        .term_at(0).src("$province")
+        .with<InRealm>("$realm").src("$province")
+        .with<RulerOf>("$realm").src("$player")
+        .with<Player>().src("$player")
         .write<Neighboring>()
         .tick_source(timers.mWeekTimer)
-        .each([=](const flecs::iter &it, size_t, const TileMap &tileMap)
+        .run([=](flecs::iter &it)
         {
-            const auto &ecs = it.world();
             ecs.remove_all<Neighboring>();
-            for (int i = 0; i + 1 < tileMap.width; i += 1)
-            for (int j = 0; j + 1 < tileMap.height; j += 1)
+            while (it.next())
             {
-                const auto r0 = topmostRealm.set_var("province", tileMap.tiles[i][j]).first();
-                if (!r0.is_valid()) continue;
-                const auto r1 = topmostRealm.set_var("province", tileMap.tiles[i + 1][j]).first();
-                const auto r2 = topmostRealm.set_var("province", tileMap.tiles[i + 1][j + 1]).first();
-                const auto r3 = topmostRealm.set_var("province", tileMap.tiles[i][j + 1]).first();
-                if (r1.is_valid() && r1 != r0) void(r0.add<Neighboring>(r1));
-                if (r2.is_valid() && r2 != r0) void(r0.add<Neighboring>(r2));
-                if (r3.is_valid() && r3 != r0) void(r0.add<Neighboring>(r3));
+                const auto &provinces = it.field<const Province>(0);
+                auto &tileMap = it.field_at<const TileMap>(1, 0);
+                for (const size_t i: it)
+                {
+                    const auto &province = provinces[i];
+                    const auto r0 = it.get_var("realm");
+                    {
+                        const size_t i = province.mPosX, j = province.mPosY;
+                        const auto r1 = topmostRealm.set_var("province", tileMap.tiles[i + 1][j]).first();
+                        const auto r2 = topmostRealm.set_var("province", tileMap.tiles[i + 1][j + 1]).first();
+                        const auto r3 = topmostRealm.set_var("province", tileMap.tiles[i][j + 1]).first();
+                        if (r1.is_valid() && r1 != r0) void(r0.add<Neighboring>(r1));
+                        if (r2.is_valid() && r2 != r0) void(r0.add<Neighboring>(r2));
+                        if (r3.is_valid() && r3 != r0) void(r0.add<Neighboring>(r3));
+                    }
+                }
             }
         }));
 

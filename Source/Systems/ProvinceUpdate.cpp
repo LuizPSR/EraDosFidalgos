@@ -44,17 +44,12 @@ void GatherProvinceRevenue(const flecs::world& ecs, const GameTickSources &timer
 }
 
 void UpdateDistanceToCapital(const flecs::world& ecs, const GameTickSources &timers) {
-    // We need the TileMap to traverse the grid
-    const auto tileMapEntity = ecs.lookup("TileMap");
-    if (!tileMapEntity.is_valid()) return;
-    const auto& tileMap = tileMapEntity.get<TileMap>();
-
     // Query all Titles (Kingdoms, Duchies, etc.)
     const auto qTitles = ecs.query<const Title>();
 
-    ecs.system<>("ReCalculateDistancesToCapital")
+    ecs.system<const TileMap>("ReCalculateDistancesToCapital")
         .tick_source(timers.mYearTimer) // Update yearly or on demand is usually sufficient
-        .run([=](flecs::iter& it) {
+        .each([=](flecs::iter& it, size_t, const TileMap &tileMap) {
             const auto& world = it.world();
 
             qTitles.each([&](flecs::entity titleEntity, const Title& title) {
@@ -200,7 +195,7 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
                 clergyMod = (estates.mClergyPower + ESTATE_EFFECT_THRESHOLD);
             }
 
-            auto player = ecs.target<Player>();
+            auto player = ecs.entity<Player>();
             auto rulerCulture = player.get<CharacterCulture>().culture;
             auto rulerTraits = GetCulturalTraits(rulerCulture);
 
@@ -244,6 +239,5 @@ ProvinceUpdates::ProvinceUpdates(flecs::world &ecs) {
 
     GatherProvinceRevenue(ecs, timers);
     UpdateDistanceToCapital(ecs, timers);
-    //UpdateStats(ecs, timers);
-
+    UpdateStats(ecs, timers);
 }
