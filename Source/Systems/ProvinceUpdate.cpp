@@ -227,9 +227,9 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
                     );
 
                 p.movement_cost = 30
-                    +  15 * (p.terrain != Plains)
-                    +  15 * (p.terrain == Mountains)
-                    +  15 * (p.roads_level == 0 && (p.biome == Forests || p.biome == Jungles))
+                    +  10 * (p.terrain != Plains)
+                    +  10 * (p.terrain == Mountains)
+                    +  10 * (p.roads_level == 0 && (p.biome == Forests || p.biome == Jungles))
                     -  5 * p.roads_level;
             });
         });

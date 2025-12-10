@@ -9,7 +9,7 @@
 #include "Systems/EstatePower.hpp"  // Para acessar EstatePowers
 #include "Random.hpp"  // Para Random::GetIntRange
 
-const int BUILDING_COST = 3000;  // ADICIONADO: Constante para custo de construções
+const int BUILDING_COST = 1000;  // ADICIONADO: Constante para custo de construções
 
 GameBoardScene::GameBoardScene(const flecs::world& ecs)
 {
@@ -48,7 +48,7 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
             ImGui::Separator();
             ImGui::Text("Desenvolvimento: %zu", province.development);
             ImGui::Text("Controle: %.1f%%", static_cast<double>(province.control));
-            ImGui::Text("Renda: %.2f ouros/dia", province.IncomeFloat());
+            ImGui::Text("Renda: %.2f ducados anuais", province.IncomeFloat());
 
             ImGui::EndTooltip();
         });
@@ -191,7 +191,7 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                 ImGui::NextColumn();
 
                 // Distancia ate a capital (se nao for capital)
-                if (!isCapital && province.distance_to_capital < 1000) {
+                if (!isCapital) {
                     ImGui::Text("Dist. Capital:");
                     ImGui::NextColumn();
                     ImGui::Text("%.1f", static_cast<double>(province.distance_to_capital));
