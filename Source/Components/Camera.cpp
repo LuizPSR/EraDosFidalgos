@@ -73,25 +73,23 @@ void UpdateCamera(Camera &camera, const InputState &input, const Window &window,
     // Recalculate view after moving
     camera.RecalculateView();
 
-    // Receive Commands
-    const auto &io = ImGui::GetIO();
-    if (!io.WantCaptureKeyboard)
-    {
-        const float keyAccelSpeed = camera.mMoveSpeed * deltaTime;
-        if (state[SDL_SCANCODE_W]) {
-            velocity.y += keyAccelSpeed;
-        }
-        if (state[SDL_SCANCODE_S]) {
-            velocity.y -= keyAccelSpeed;
-        }
-        if (state[SDL_SCANCODE_A]) {
-            velocity.x -= keyAccelSpeed;
-        }
-        if (state[SDL_SCANCODE_D]) {
-            velocity.x += keyAccelSpeed;
-        }
+
+    const float keyAccelSpeed = camera.mMoveSpeed * deltaTime;
+    if (state[SDL_SCANCODE_W]) {
+        velocity.y += keyAccelSpeed;
+    }
+    if (state[SDL_SCANCODE_S]) {
+        velocity.y -= keyAccelSpeed;
+    }
+    if (state[SDL_SCANCODE_A]) {
+        velocity.x -= keyAccelSpeed;
+    }
+    if (state[SDL_SCANCODE_D]) {
+        velocity.x += keyAccelSpeed;
     }
 
+    // Receive Commands
+    const auto &io = ImGui::GetIO();
     if (!io.WantCaptureMouse)
     {
         const float edgeAccelSpeed = camera.mEdgeScrollSpeed * deltaTime;

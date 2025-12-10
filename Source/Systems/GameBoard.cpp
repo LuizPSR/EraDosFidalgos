@@ -8,6 +8,8 @@
 #include "Components/Province.hpp"
 #include "Renderer/Shader.hpp"
 
+const int BUILDING_COST = 3000;
+
 GameBoardScene::GameBoardScene(const flecs::world& ecs)
 {
     const auto &timers = ecs.get<GameTickSources>();
@@ -41,26 +43,52 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
             ImGui::EndTooltip();
         });
 
-    ecs.system<const Province, const Title, const Character>("ShowProvinceDetails")
+    ecs.system<Province, Title, Character>("ShowProvinceDetails")
         .term_at(1).src("$title")
         .term_at(2).src("$character")
         .with<InRealm>("$title")
         .with<RuledBy>("$character").src("$title")
         .with<ShowProvinceDetails>()
         .tick_source(tickTimer)
-        .each([](flecs::entity entity, const Province &province, const Title &title, const Character &character)
+        .each([](flecs::entity entity,  Province &province,  Title &title,  Character &character)
         {
             bool open = true;
             const auto windowTitle = "Província Selecionada##" + std::to_string(entity.id());
             const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
             ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2{0.5f, 0.5f});
-            if (ImGui::Begin(windowTitle.data(), &open))
+            if (ImGui::Begin(windowTitle.data(), &open, ImGuiWindowFlags_AlwaysAutoResize))
             {
                 ImGui::Text("Nome: %s", province.name.data());
                 ImGui::Text("Parte de: %s", title.name.data());
                 ImGui::Text("Governada por: %s", character.mName.data());
-                ImGui::Text("\t%zu anos", character.mAgeDays / 360);
-                ImGui::Text("\t%0.2f gold", character.mMoney * 0.01f);
+
+                if (ImGui::CollapsingHeader("Situação Local")) {
+                    ImGui::Text("Desenvolvimento          %3u", province.development);
+                    ImGui::Text("Controle                 %3u", province.control);
+                    ImGui::Text("Opinião Pública          %3d", province.popular_opinion);
+                    //ImGui::Text("Distancia da Capital     %3d", province.distance_to_capital);
+                    //ImGui::Text("Custo de Viajem          %3.0f", province.movement_cost);
+                }
+
+
+/*
+                if ( ) {
+                    if (ImGui::CollapsingHeader("Construções")) {
+                        ImGui::Text("Estradas");
+                        ImGui::SameLine(5, 0);
+                        ImGui::Text("%u");
+                        ImGui::SameLine(5, 0);
+                        if (ImGui::Button("⬆", ImVec2(1, 0))
+                            &&  province.roads_level < 5
+                            && character.mMoney >= BUILDING_COST
+                        ) {
+                            character.mMoney -= BUILDING_COST;
+                            province.roads_level++;
+                        };
+                    }
+                }*/
+
+
             }
             ImGui::End();
             if (!open) void(entity.remove<ShowProvinceDetails>());
