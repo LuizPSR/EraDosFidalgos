@@ -38,8 +38,6 @@ void GatherProvinceRevenue(const flecs::world& ecs, const GameTickSources &timer
                 {
                     character.mMoney += province.income;
                 });
-
-            // TODO: pay taxes to higher lieges
         });
 }
 
@@ -51,137 +49,35 @@ void UpdateDistanceToCapital(const flecs::world& ecs, const GameTickSources &tim
         .kind(flecs::PreUpdate)
         .tick_source(timers.mMonthTimer)
         .each([=](flecs::iter& it, size_t, const TileMap &tileMap) {
-            const auto& world = it.world();
 
-            qTitles.each([&](flecs::entity titleEntity, const Title& title) {
-                // 1. Find the capital of this title
-                // The capital has the relation (CapitalOf, TitleEntity)
-                const flecs::entity capitalEntity = world
-                    .target<CapitalOf>(titleEntity);
-
-                if (!capitalEntity.is_valid()) return;
-
-                // 2. Prepare Dijkstra
-                struct Node {
-                    flecs::entity entity;
-                    float cost;
-                    bool operator>(const Node& other) const { return cost > other.cost; }
-                };
-
-                std::priority_queue<Node, std::vector<Node>, std::greater<Node>> pq;
-                std::unordered_map<flecs::entity, float, EntityHash> dist;
-
-                // Initialize with Capital
-                pq.push({ capitalEntity, 0.0f });
-                dist[capitalEntity] = 0.0f;
-
-                // We want to update all provinces in the realm.
-                // We don't stop strictly when all are found because pathing might improve,
-                // but for performance in a grid, standard Dijkstra is fine.
-                // Note: The path can go OUTSIDE the realm, so we iterate the whole graph (limited by max relevant distance or map bounds).
-
-                while (!pq.empty()) {
-                    Node current = pq.top();
-                    pq.pop();
-
-                    if (current.cost > dist[current.entity]) continue;
-
-                    const auto pPos = current.entity.get<TileData>();
-                    const auto pProv = current.entity.get_mut<Province>();
-
-
-                    // Neighbors
-                    const int dx[] = { 0, 0, 1, -1 };
-                    const int dy[] = { 1, -1, 0, 0 };
-
-                    // Cost to leave current tile (as per requirement: "cost ... is movement_cost of tile A")
-                    float traverseCost = pProv.movement_cost;
-
-                    for (int i = 0; i < 4; ++i) {
-                        int nx = pPos.x + dx[i];
-                        int ny = pPos.y + dy[i];
-
-                        if (nx < 0 || nx >= MAP_WIDTH || ny < 0 || ny >= MAP_HEIGHT) continue;
-
-                        flecs::entity neighbor = tileMap.tiles[nx][ny];
-                        if (!neighbor.is_valid()) continue;
-
-                        // Skip if Sea (unless ships are implemented, usually standard expansion blocks on sea)
-                        // Assuming movement logic similar to CreateKingdoms
-                        const auto nProv = neighbor.get_mut<Province>();
-                        if (nProv.terrain == TerrainType::Sea) continue;
-
-                        float newDist = current.cost + traverseCost;
-
-                        if (!dist.count(neighbor) || newDist < dist[neighbor]) {
-                            dist[neighbor] = newDist;
-                            pq.push({ neighbor, newDist });
-                        }
-                    }
-                }
-
-                // 3. Update Provinces belonging to this Title
-                // Iterate all provinces that are 'InRealm' of this Title
-                world.query_builder<Province>()
-                    .with<InRealm>(titleEntity)
-                    .each([&](flecs::entity pEntity, Province& p) {
-                        if (dist.count(pEntity)) {
-                            p.distance_to_capital = dist[pEntity];
-                        } else {
-                            // If unreachable
-                            p.distance_to_capital = 9999.0f;
-                        }
-                    });
-            });
         });
 }
 
 void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
-    auto qPlayerProvinces = ecs.query_builder<const Province>()
+    auto qPlayerProvinces = ecs.query_builder<Province>()
         .with<InRealm>("$title")
         .with<RulerOf>("$title").src("$player")
         .with<Player>().src("$player")
         .build();
 
-    ecs.system<>("EstateEffects")
+    ecs.system("EstateEffects")
         .kind(flecs::PreUpdate)
         .tick_source(timers.mWeekTimer)
         .run([=](flecs::iter& it) {
             const auto estates = it.world().get<EstatePowers>();
 
-            auto provinces = std::vector<Province>{};
-
-            qPlayerProvinces.each([&](flecs::entity t, const Province& p) {
-                provinces.push_back(p);
-            });
-
             // Commoners Power
 
             int commoners = estates.mCommonersPower;
             int change = 0;
-            int points = 0;
+            int chance = 0;
 
             if (commoners > ESTATE_EFFECT_THRESHOLD) {
                 change = 1;
-                points = commoners - ESTATE_EFFECT_THRESHOLD;
+                chance = commoners - ESTATE_EFFECT_THRESHOLD;
             } else if (commoners < -ESTATE_EFFECT_THRESHOLD) {
                 change = -1;
-                points = std::abs(commoners) - ESTATE_EFFECT_THRESHOLD;
-            }
-
-            while (points > 0) {
-                points--;
-
-                if (provinces.empty())
-                {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Player has no provinces???");
-                } else
-                {
-                    auto index = Random::GetIntRange(0, provinces.size() - 1);
-                    auto p = provinces.at(index);
-
-                    p.development += change;
-                }
+                chance = std::abs(commoners) - ESTATE_EFFECT_THRESHOLD;
             }
 
             // Nobles and Clergy Power
@@ -207,7 +103,14 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
             auto rulerCulture = player.get<CharacterCulture>().culture;
             auto rulerTraits = GetCulturalTraits(rulerCulture);
 
-            for (auto p: provinces) {
+            qPlayerProvinces.each([&](flecs::entity t, Province& p) {
+
+                if (Random::GetIntRange(0,100) <= chance+5)
+                    p.development =
+                        std::clamp<unsigned int>(
+                            change + p.development
+                            , 0, 100
+                        );
 
                 p.popular_opinion =
                     std::clamp(
@@ -217,8 +120,6 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
 
                         , 0.0f, 100.0f
                     );
-
-
 
                 p.control =
                     std::clamp(
@@ -233,11 +134,11 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
                     );
 
                 p.movement_cost = 30
-                    +  15 * (p.terrain == Plains)
+                    +  15 * (p.terrain != Plains)
                     +  15 * (p.terrain == Mountains)
                     +  15 * (p.roads_level == 0 && (p.biome == Forests || p.biome == Jungles))
                     -  5 * p.roads_level;
-            }
+            });
         });
 }
 

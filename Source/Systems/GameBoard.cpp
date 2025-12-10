@@ -69,8 +69,8 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                 ImGui::Text("%d tropas estacionadas", army.mAmount);
 
                 if (ImGui::CollapsingHeader("Situação Local")) {
-                    ImGui::Text("Desenvolvimento          %3lu", province.development);
-                    ImGui::Text("Controle                 %3lu", province.control);
+                    ImGui::Text("Desenvolvimento          %3u", province.development);
+                    ImGui::Text("Controle                 %3u", province.control);
                     ImGui::Text("Opinião Pública          %3d", province.popular_opinion);
                     //ImGui::Text("Distancia da Capital     %3d", province.distance_to_capital);
                     //ImGui::Text("Custo de Viajem          %3.0f", province.movement_cost);
@@ -79,10 +79,10 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                 if (characterEntity.has<Player>()) {
                     if (ImGui::CollapsingHeader("Construções")) {
                         ImGui::Text("Estradas");
-                        ImGui::SameLine();
-                        ImGui::Text("%u", province.roads_level);
-                        ImGui::SameLine();
-                        if (ImGui::Button("+")
+                        ImGui::SameLine(5, 0);
+                        ImGui::Text("%u");
+                        ImGui::SameLine(5, 0);
+                        if (ImGui::Button("⬆", ImVec2(1, 0))
                             &&  province.roads_level < 5
                             && character.mMoney >= BUILDING_COST
                         ) {
