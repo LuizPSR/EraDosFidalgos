@@ -20,7 +20,7 @@ struct Camera
     glm::vec2 mTarget{};
     const glm::vec3 mUp{0.0f, 1.0f, 0.0f};
 
-    float mZoomLevel = 50.0f;
+    float mZoomLevel = 5.0f;
     float mZoomInertia = 0.0f;
 
     void RecalculateView();
