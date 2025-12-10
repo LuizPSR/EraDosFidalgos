@@ -53,7 +53,8 @@ void UpdateDistanceToCapital(const flecs::world& ecs, const GameTickSources &tim
     const auto qTitles = ecs.query<const Title>();
 
     ecs.system<>("ReCalculateDistancesToCapital")
-        .tick_source(timers.mYearTimer) // Update yearly or on demand is usually sufficient
+        .kind(flecs::PreUpdate)
+        .tick_source(timers.mMonthTimer) // Update yearly or on demand is usually sufficient
         .run([=](flecs::iter& it) {
             const auto& world = it.world();
 
@@ -142,6 +143,7 @@ void UpdateDistanceToCapital(const flecs::world& ecs, const GameTickSources &tim
 
 void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
     ecs.system<>("EstateEffects")
+        .kind(flecs::PreUpdate)
         .tick_source(timers.mWeekTimer)
         .run([=](flecs::iter& it) {
             const auto estates = it.world().get<EstatePowers>();
@@ -200,42 +202,45 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
                 clergyMod = (estates.mClergyPower + ESTATE_EFFECT_THRESHOLD);
             }
 
-            auto player = ecs.target<Player>();
-            auto rulerCulture = player.get<CharacterCulture>().culture;
-            auto rulerTraits = GetCulturalTraits(rulerCulture);
+            ecs.query_builder<CharacterCulture>()
+                .with<Player>()
+                .build()
+                .each([&](flecs::entity t, CharacterCulture& culture) {
+                    auto rulerCulture = culture.culture;
+                    auto rulerTraits = GetCulturalTraits(rulerCulture);
 
-            for (auto p: provinces) {
-                auto localTraits = GetCulturalTraits(p.culture);
+                    for (auto p: provinces) {
 
-                p.popular_opinion =
-                    std::clamp(
-                        5.f * p.temples_level
-                        + clergyMod
-                        - 25 * (p.culture != rulerCulture)
+                        p.popular_opinion =
+                            std::clamp(
+                                5.f * p.temples_level
+                                + clergyMod
+                                - 25 * (p.culture != rulerCulture)
 
-                        , 0.0f, 100.0f
-                    );
-
+                                , 0.0f, 100.0f
+                            );
 
 
-                p.control =
-                    std::clamp(
-                        100
-                        + 10 * p.fortification_level
-                        + 10 * (rulerTraits.extra_control)
-                        + nobilityMod
-                        - p.distance_to_capital
-                        + p.popular_opinion * (p.popular_opinion < 0)
 
-                        , 0.f, 100.f
-                    );
+                        p.control =
+                            std::clamp(
+                                100
+                                + 10 * p.fortification_level
+                                + 10 * (rulerTraits.extra_control)
+                                + nobilityMod
+                                - p.distance_to_capital
+                                + p.popular_opinion * (p.popular_opinion < 0)
 
-                p.movement_cost = 30
-                    +  15 * (p.terrain == Plains)
-                    +  15 * (p.terrain == Mountains)
-                    +  15 * (p.roads_level == 0 && (p.biome == Forests || p.biome == Jungles))
-                    -  5 * p.roads_level;
-            }
+                                , 0.f, 100.f
+                            );
+
+                        p.movement_cost = 30
+                            +  15 * (p.terrain == Plains)
+                            +  15 * (p.terrain == Mountains)
+                            +  15 * (p.roads_level == 0 && (p.biome == Forests || p.biome == Jungles))
+                            -  5 * p.roads_level;
+                    }
+                });
         });
 }
 
@@ -244,6 +249,6 @@ ProvinceUpdates::ProvinceUpdates(flecs::world &ecs) {
 
     GatherProvinceRevenue(ecs, timers);
     UpdateDistanceToCapital(ecs, timers);
-    //UpdateStats(ecs, timers);
+    UpdateStats(ecs, timers);
 
 }
