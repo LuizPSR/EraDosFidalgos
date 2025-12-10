@@ -59,8 +59,7 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
             const auto windowTitle = "Província Selecionada##" + std::to_string(entity.id());
             const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
             ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2{0.5f, 0.5f});
-            if (ImGui::Begin(windowTitle.data(), &open, ImGuiWindowFlags_AlwaysAutoResize))
-            {
+            if (ImGui::Begin(windowTitle.data(), &open, ImGuiWindowFlags_AlwaysAutoResize)) {
                 ImGui::Text("Nome: %s", province.name.data());
                 ImGui::Text("Parte de: %s", title.name.data());
                 ImGui::Text("Governada por: %s", character.mName.data());
@@ -73,21 +72,80 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                     //ImGui::Text("Custo de Viajem          %3.0f", province.movement_cost);
                 }
 
-                if (characterEntity.has<Player>()) {
-                    if (ImGui::CollapsingHeader("Construções")) {
-                        ImGui::Text("Estradas");
-                        ImGui::SameLine(5, 0);
-                        ImGui::Text("%u");
-                        ImGui::SameLine(5, 0);
-                        if (ImGui::Button("⬆", ImVec2(1, 0))
-                            &&  province.roads_level < 5
-                            && character.mMoney >= BUILDING_COST
-                        ) {
-                            character.mMoney -= BUILDING_COST;
-                            province.roads_level++;
-                        };
-                    }
+                if (ImGui::CollapsingHeader("Construções")) {
+                    ImGui::Text("Estradas         ");
+                    ImGui::SameLine();
+                    if (ImGui::Button("-##1")
+                        &&  province.roads_level > 0
+                    ) {
+                        province.roads_level--;
+                    };
+                    ImGui::SameLine();
+                    ImGui::Text("%u", province.roads_level);
+                    ImGui::SameLine();
+                    if (ImGui::Button("+##1")
+                        &&  province.roads_level < 5
+                        && character.mMoney >= BUILDING_COST
+                    ) {
+                        character.mMoney -= BUILDING_COST;
+                        province.roads_level++;
+                    };
+
+                    ImGui::Text("Fortificação     ");
+                    ImGui::SameLine();
+                    if (ImGui::Button("-##2")
+                        &&  province.fortification_level > 0
+                    ) {
+                        province.fortification_level--;
+                    };
+                    ImGui::SameLine();
+                    ImGui::Text("%u", province.fortification_level);
+                    ImGui::SameLine();
+                    if (ImGui::Button("+##2")
+                        &&  province.fortification_level < 5
+                        && character.mMoney >= BUILDING_COST
+                    ) {
+                        character.mMoney -= BUILDING_COST;
+                        province.fortification_level++;
+                    };
+
+                    ImGui::Text("Mercados         ");
+                    ImGui::SameLine();
+                    if (ImGui::Button("-##3")
+                        &&  province.market_level > 0
+                    ) {
+                        province.market_level--;
+                    };
+                    ImGui::SameLine();
+                    ImGui::Text("%u", province.market_level);
+                    ImGui::SameLine();
+                    if (ImGui::Button("+##3")
+                        &&  province.market_level < 5
+                        && character.mMoney >= BUILDING_COST
+                    ) {
+                        character.mMoney -= BUILDING_COST;
+                        province.market_level++;
+                    };
+
+                    ImGui::Text("Templos          ");
+                    ImGui::SameLine();
+                    if (ImGui::Button("-##4")
+                        &&  province.temples_level > 0
+                    ) {
+                        province.temples_level--;
+                    };
+                    ImGui::SameLine();
+                    ImGui::Text("%u", province.temples_level);
+                    ImGui::SameLine();
+                    if (ImGui::Button("+##4")
+                        &&  province.temples_level < 5
+                        && character.mMoney >= BUILDING_COST
+                    ) {
+                        character.mMoney -= BUILDING_COST;
+                        province.temples_level++;
+                    };
                 }
+
             }
             ImGui::End();
             if (!open) void(entity.remove<ShowProvinceDetails>());

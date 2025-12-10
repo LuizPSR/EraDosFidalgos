@@ -36,6 +36,18 @@ void GatherProvinceRevenue(const flecs::world& ecs, const GameTickSources &timer
                 .set_var("province", it.entity(i))
                 .each([&](Character &character)
                 {
+                    province.income = // base value
+                        10
+                        + 5 * province.market_level
+                        - 3 * province.temples_level
+                        - 3 * province.fortification_level
+                        - province.roads_level;
+
+                    province.income =
+                        province.income
+                        * (province.development + 100)
+                        * province.control * 0.01;
+
                     character.mMoney += province.income;
                 });
         });
