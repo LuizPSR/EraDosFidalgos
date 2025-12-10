@@ -13,7 +13,7 @@ struct Title
 struct Character
 {
     std::string mName;
-    uint64_t mMoney = 0.0f;
+    uint64_t mMoney = 0;
     uint64_t mAgeDays = 0;
 
     // Transforms income from fixed point to floating point (USE FOR DISPLAY ONLY)

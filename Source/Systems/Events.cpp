@@ -6,7 +6,6 @@
 #include "Game.hpp"
 
 #include "EstatePower.hpp"
-#include "ProvinceRevenue.hpp"
 
 void CenterNextImGuiWindow()
 {
@@ -284,7 +283,6 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 
     DoSamplePopupSystem(ecs, timers.mTickTimer);
 
-    DoProvinceRevenueSystems(ecs, timers);
 
     DoCharacterAgingSystem(ecs, timers);
 
@@ -292,7 +290,7 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 
     DoGameOverEvents(ecs, timers);
 
-    EventsSampleScene::InitializeEntities(ecs);
+    InitializeEntities(ecs);
 }
 
 void EventsSampleScene::InitializeEntities(const flecs::world& ecs)

@@ -23,6 +23,7 @@
 #include "Systems/Characters.hpp"
 #include "Systems/Sound.hpp"
 #include "Systems/MapGenerator.hpp"
+#include "Systems/ProvinceUpdate.hpp"
 
 bool Initialize(flecs::world &ecs) {
     Random::Init();
@@ -138,6 +139,8 @@ void ImportModules(flecs::world& ecs) {
     void(ecs.import<CharactersModule>().child_of(testUI));
     void(ecs.import<GameBoardScene>().child_of(testUI));
     void(ecs.import<EventsSampleScene>().child_of(testUI));
+
+    void(ecs.import<ProvinceUpdates>().child_of(testUI));
 }
 
 GameTickSources::GameTickSources(const flecs::world& ecs) {
