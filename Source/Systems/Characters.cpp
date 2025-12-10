@@ -196,6 +196,8 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
 {
     const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
 
+    void(ecs.entity<Player>().add<Player>());
+
     DoCreateCharacterBuilder(ecs);
 
     void(ecs.component<ShowCharacterDetails>()
@@ -214,7 +216,7 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         .add(flecs::With, ecs.component<DynastyMember>())
         .add(flecs::Exclusive)
         .add(flecs::Symmetric));
-    void(ecs.component<InRealm>().add(flecs::Exclusive).add(flecs::Transitive));
+    void(ecs.component<InRealm>().add(flecs::Acyclic).add(flecs::Exclusive).add(flecs::Transitive));
 
     // 3. Initialize Cached Queries
 

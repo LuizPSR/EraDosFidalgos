@@ -8,5 +8,12 @@ struct DiplomacyModule
 
 struct RealmRelation
 {
-    uint8_t diplomacy;
+    int8_t relations = 0;
 };
+
+struct War
+{
+    uint32_t mStartDate;
+};
+
+struct Neighboring {};

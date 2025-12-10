@@ -27,14 +27,7 @@ void renderPoliticalMap(flecs::iter &it)
         verts->SetActive();
 
         const auto &provinces = it.field<const Province>(0);
-
-        auto titleEntity = it.get_var("title");
-        while (auto inRealm = titleEntity.target<InRealm>())
-        {
-            if (!inRealm.is_valid() || !inRealm.has<const Title>()) break;
-            titleEntity = inRealm;
-        }
-        const auto &title = titleEntity.get<const Title>();
+        const auto &title = it.field_at<const Title>(1, 0);
 
         for (size_t i: it)
         {
@@ -140,6 +133,7 @@ void DoRenderTileMapSystem(const flecs::world &ecs)
     ecs.system<const Province, const Title, const Renderer, const Camera, const Window>("RenderPoliticalMap")
         .term_at(1).src("$title")
         .with<InRealm>("$title")
+        .without<InRealm>(flecs::Wildcard).src("$title")
         .kind(flecs::PreStore)
         .run([=](flecs::iter &it)
         {
