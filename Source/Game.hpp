@@ -30,3 +30,6 @@ struct GameTickSources
     flecs::timer mMonthTimer;
     flecs::timer mYearTimer;
 };
+
+struct GameStarted {};
+struct GameEnded {};

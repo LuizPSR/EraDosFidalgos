@@ -337,6 +337,7 @@ void GameOverModule::ShowGameOverScreen(const flecs::world& ecs, GameTickSources
 
             // Ativar menu principal
             if (mainMenuEntity.is_valid()) mainMenuEntity.enable();
+            ecs.add<GameEnded>();
 
             // Resetar completamente o estado do game over
             ResetGameOverState();

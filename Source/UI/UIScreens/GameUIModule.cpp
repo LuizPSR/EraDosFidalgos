@@ -9,6 +9,7 @@
 #include "Systems/EstatePower.hpp" // Adicionar este include
 #include "Renderer/Renderer.hpp"
 #include "Renderer/Texture.hpp"
+#include "Systems/MapGenerator.hpp"
 
 // Variáveis para o popup do personagem
 static Texture* characterTexture = nullptr;
@@ -82,37 +83,6 @@ static ImU32 GetPowerColor(int power) {
 
 GameUIModule::GameUIModule(flecs::world& ecs) {
     const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
-
-    void(ecs.entity<GameStarted>().add(flecs::Singleton));
-    void(ecs.entity<GameEnded>().add(flecs::Singleton));
-
-    const auto playerCapital = ecs.query_builder<const Province>("PlayerCapital")
-        .term_at(0).src("$province")
-        .with<CapitalOf>("$title").src("$province")
-        .with<RulerOf>("$title")
-        .with<Player>()
-        .build();
-    ecs.system<Camera, GameTickSources>("SetupGame")
-        .with<GameStarted>()
-        .immediate()
-        .each([=](flecs::iter &it, size_t, Camera &camera, GameTickSources &tickSources)
-        {
-            const auto &ecs = it.world();
-
-            ecs.defer_suspend();
-
-            CreateKingdoms(ecs);
-            tickSources.mTickTimer.start();
-
-            playerCapital.each([&](const Province &capital)
-            {
-                camera.mTarget = glm::vec2(capital.mPosX, capital.mPosY) * 32.0f;
-            });
-
-            ecs.defer_resume();
-
-            void(ecs.remove<GameStarted>());
-        });
 
     ecs.system<GameTickSources>("UpdateUI")
         .tick_source(tickTimer)

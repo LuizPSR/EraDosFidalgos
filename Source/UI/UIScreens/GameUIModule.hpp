@@ -7,6 +7,3 @@ struct GameUIModule {
 
     static void ShowTestUI(const flecs::world& ecs, GameTickSources& tickSources);
 };
-
-struct GameStarted {};
-struct GameEnded {};

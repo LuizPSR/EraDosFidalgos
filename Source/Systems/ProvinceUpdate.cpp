@@ -137,6 +137,12 @@ void UpdateDistanceToCapital(const flecs::world& ecs, const GameTickSources &tim
 }
 
 void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
+    auto qPlayerProvinces = ecs.query_builder<const Province>()
+        .with<InRealm>("$title")
+        .with<RulerOf>("$title").src("$player")
+        .with<Player>().src("$player")
+        .build();
+
     ecs.system<>("EstateEffects")
         .kind(flecs::PreUpdate)
         .tick_source(timers.mWeekTimer)
@@ -145,14 +151,8 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
 
             auto provinces = std::vector<Province>{};
 
-            auto qPlayerProvinces = ecs.query_builder<const Province>()
-                .with<InRealm>("$title")
-                .with<RulerOf>("$title").src<Player>()
-                .with<Player>().src("$player")
-                .build();
-
             qPlayerProvinces.each([&](flecs::entity t, const Province& p) {
-                    provinces.push_back(p);
+                provinces.push_back(p);
             });
 
             // Commoners Power
@@ -172,7 +172,7 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
             while (points > 0) {
                 points--;
 
-                auto index = Random::GetIntRange(0, provinces.size());
+                auto index = Random::GetIntRange(0, provinces.size() - 1);
                 auto p = provinces.at(index);
 
                 p.development += change;

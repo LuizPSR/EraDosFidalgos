@@ -79,6 +79,7 @@ void PauseMenuModule::ShowPauseMenu(const flecs::world& ecs, GameTickSources& ti
             if (testUIEntity.is_valid()) testUIEntity.disable();
             if (pauseMenuEntity.is_valid()) pauseMenuEntity.disable();
             if (mainMenuEntity.is_valid()) mainMenuEntity.enable();
+            ecs.add<GameEnded>();
         }
     }
     ImGui::End();

@@ -84,6 +84,44 @@ bool Initialize(flecs::world &ecs) {
 }
 
 void RegisterSystems(flecs::world &ecs) {
+    void(ecs.component<GameStarted>().add(flecs::Singleton));
+    void(ecs.entity<GameEnded>().add(flecs::Singleton));
+
+    const auto playerCapital = ecs.query_builder<const Province>("PlayerCapital")
+        .term_at(0).src("$province")
+        .with<CapitalOf>("$title").src("$province")
+        .with<RulerOf>("$title")
+        .with<Player>()
+        .build();
+
+    ecs.system<Camera, GameTickSources>("SetupGame")
+        .with<GameStarted>()
+        .immediate()
+        .each([=](flecs::iter, size_t, Camera &camera, GameTickSources &tickSources)
+        {
+            ecs.defer_suspend();
+
+            CreateKingdoms(ecs);
+            tickSources.mTickTimer.start();
+
+            playerCapital.each([&](const Province &capital)
+            {
+                camera.mTarget = glm::vec2(capital.mPosX, capital.mPosY) * 32.0f;
+            });
+            void(ecs.remove<GameStarted>());
+
+            ecs.defer_resume();
+        });
+
+    ecs.system<>("DestroyGame")
+        .with<GameEnded>()
+        .each([=](flecs::iter, size_t)
+        {
+            ecs.entity<Player>().clear();
+            ecs.delete_with<Character>();
+            ecs.remove<GameEnded>();
+        });
+
     ecs.system("ReadInput")
         .kind(flecs::OnLoad)
         .run([](const flecs::iter &it) {
