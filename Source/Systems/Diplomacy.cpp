@@ -79,6 +79,7 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
         .with<RulerOf>("$realm")
         .with<Neighboring>("$neighbor").src("$realm")
         .with<RulerOf>("$neighbor").src("$neighborRuler")
+        .write<RealmRelation>()
         .tick_source(timers.mMonthTimer)
         .each([=](flecs::iter &it, size_t, const Title &a, const Title &b, const Character &ar, const Character &br, const GameTime &gameTime)
         {
@@ -120,7 +121,7 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
                     if (ImGui::Button(choice.mText.data()))
                     {
                         auto &relation = event.mSourceRealm.ensure<RealmRelation>(event.mTargetRealm);
-                        relation.relations += std::clamp((int)relation.relations + choice.mRelationChange, -128, 127);;
+                        relation.relations = std::clamp<int>((int)relation.relations + choice.mRelationChange, -128, 127);
                         entity.destruct();
                     }
                     if (ImGui::BeginItemTooltip())

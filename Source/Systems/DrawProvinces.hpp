@@ -7,6 +7,5 @@ enum class MapMode
     Geographic,
     Political,
     Cultural,
-    Distance,
     Diplomatic,
 };

@@ -1,4 +1,5 @@
 #pragma once
+#include <flecs.h>
 #include <cstdint>
 
 struct DiplomacyModule

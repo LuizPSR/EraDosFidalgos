@@ -115,6 +115,11 @@ void Renderer::Shutdown()
     delete mPoliticalShader;
     mPoliticalShader = nullptr;
 
+    mHeatMapShader->Unload();
+    delete mHeatMapShader;
+    mHeatMapShader = nullptr;
+
+
     if (mContext)
     {
         SDL_GL_DestroyContext(mContext);
@@ -252,6 +257,11 @@ bool Renderer::LoadShaders()
 
     mPoliticalShader = new Shader();
     if (!mPoliticalShader->Load(std::filesystem::path(SDL_GetBasePath()) / "Shaders/Political")) {
+        return false;
+    }
+
+    mHeatMapShader = new Shader();
+    if (!mHeatMapShader->Load(std::filesystem::path(SDL_GetBasePath()) / "Shaders/HeatMap")) {
         return false;
     }
 
