@@ -48,18 +48,17 @@ void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers
 
     const auto powerEvents = readEstatePowerEventsFromFile();
 
-    ecs.system<>("PowerEventsSpawner")
+    ecs.system<const GameTime>("PowerEventsSpawner")
         .tick_source(timers.mMonthTimer)
-        .run([=](const flecs::iter &it)
+        .each([=](const GameTime &gameTime)
         {
-            const auto &ecs = it.world();
-            if (Random::GetFloat() < 1.f)
+            if (Random::GetFloat() < 0.2f)
             {
                 auto event = powerEvents[Random::GetIntRange(0, powerEvents.size() - 1)];
                 void(ecs.entity()
                     .child_of(ecs.entity("Events"))
                     .set<EstatePowerEvent>(event)
-                    .add<FiredEvent>());
+                    .set(EventSchedule::InXDays(gameTime, Random::GetIntRange(0, 30))));
             }
         });
 
@@ -81,7 +80,7 @@ void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers
             }
             std::string title = "Evento de Estado##" + std::to_string(entity.id());
             ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Appearing);
-            if (ImGui::Begin(title.data()))
+            if (ImGui::Begin(title.data(), 0, ImGuiWindowFlags_AlwaysAutoResize))
             {
                 ImGui::TextWrapped("%s", event.mMessage.data());
                 for (const auto &choice: event.mChoices)

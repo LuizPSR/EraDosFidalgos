@@ -45,16 +45,18 @@ struct CharacterBuilder
         const flecs::entity& dynasty_entity,
         bool isMale,
         flecs::entity baseEntity,
-        CultureType culture
+        CultureType culture,
+        uint32_t ageDays = 20 * 360
         ) const;
     flecs::entity CreateCharacter(
         const std::string& char_name,
         const flecs::entity& dynasty_entity,
         bool isMale,
-        CultureType culture
+        CultureType culture,
+        uint32_t ageDays = 20 * 360
         ) const
     {
-        return CreateCharacter(char_name, dynasty_entity, isMale, ecs.entity(), culture);
+        return CreateCharacter(char_name, dynasty_entity, isMale, ecs.entity(), culture, ageDays);
     }
 };
 
@@ -63,14 +65,14 @@ flecs::entity CharacterBuilder::CreateCharacter(
     const flecs::entity& dynasty_entity,
     bool isMale,
     flecs::entity baseEntity,
-    CultureType culture
-    ) const
+    CultureType culture,
+    uint32_t ageDays) const
 {
     flecs::entity character = baseEntity
         .set<Character>({
             .mName = char_name,
             .mMoney = 4971,
-            .mAgeDays = 20 * 360,
+            .mAgeDays = ageDays,
         });
 
     if (dynasty_entity.is_valid())
@@ -518,10 +520,11 @@ void RenderCharacterOverviewWindow(const flecs::world& ecs, const CharacterQueri
             ImGui::EndTable();
         } else
         {
-            ImGui::BeginTable("RulerListCols", 3);
+            ImGui::BeginTable("RulerListCols", 4);
             ImGui::TableNextRow();
-            ImGui::TableNextColumn(); ImGui::Text("Nome do Rei");
+            ImGui::TableNextColumn(); ImGui::Text("Nome");
             ImGui::TableNextColumn(); ImGui::Text("Título Primário");
+            ImGui::TableNextColumn(); ImGui::Text("Idade");
             ImGui::TableNextColumn(); ImGui::Text("Cônjuge");
             auto playerDynasty = ecs.entity<Player>().target<DynastyMember>();
             queries
@@ -546,9 +549,7 @@ void RenderRulerRow(
     const Character *marriedTo = nullptr;
     if (ruler.has<MarriedTo>(flecs::Wildcard))
     {
-        marriedTo = &ruler
-            .target_for<Character>(ecs.component<MarriedTo>())
-            .get<Character>();
+        marriedTo = ruler.target<MarriedTo>().try_get<Character>();
     }
 
     ImGui::TableNextRow();
@@ -571,27 +572,40 @@ void RenderRulerRow(
         RenderCharacterDetailWindow(ecs, ruler, titleEntity, character, queries);
 }
 
-void RenderDynastyMemberRow(const flecs::world& ecs, const CharacterQueries& queries, const Character& character,
-    flecs::entity ruler, flecs::entity playerDynasty)
+void RenderDynastyMemberRow(const flecs::world& ecs, const CharacterQueries& queries,
+    const Character& character, flecs::entity characterEntity, flecs::entity playerDynasty)
 {
     const Character *marriedTo = nullptr;
-    if (ruler.has<MarriedTo>(flecs::Wildcard))
+    if (characterEntity.has<MarriedTo>(flecs::Wildcard))
     {
-        marriedTo = ruler
-            .target_for<Character>(ecs.component<MarriedTo>())
-            .try_get<Character>();
+        marriedTo = characterEntity.target<MarriedTo>().try_get<Character>();
     }
     const Title *title = nullptr;
-    if (ruler.has<RulerOf>(flecs::Wildcard))
+    if (characterEntity.has<RulerOf>(flecs::Wildcard))
     {
-        title = ruler
+        title = characterEntity
             .target_for<Title>(ecs.component<RulerOf>())
             .try_get<Title>();
+    }
+
+    const char *ageClass = "?";
+    switch (characterEntity.ensure<AgeClass>())
+    {
+    case AgeClass::Child:
+        ageClass = "Criança";
+        break;
+    case AgeClass::Adult:
+        ageClass = "Adulto";
+        break;
+    case AgeClass::Deceased:
+        ageClass = "Morto";
+        break;
     }
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn(); ImGui::Text("%s", character.mName.c_str());
     ImGui::TableNextColumn(); ImGui::Text("%s", title ? title->name.c_str() : "Nenhum");
+    ImGui::TableNextColumn(); ImGui::Text("%zd (%s)", character.mAgeDays / 360, ageClass);
     ImGui::TableNextColumn(); ImGui::Text("%s", marriedTo ? marriedTo->mName.c_str() : "Nenhum");
 }
 
@@ -658,10 +672,12 @@ void RenderCharacterDetailWindow(
 
 flecs::entity BirthChildCharacter(const flecs::world& ecs, const Character& father, const Character& mother, flecs::entity dynasty)
 {
+    const auto oldScope = ecs.set_scope(ecs.entity("Kingdoms"));
     const auto &builder = ecs.get<CharacterBuilder>();
     bool isMale = Random::GetIntRange(0, 1);
     auto name = isMale ? builder.GenMaleName() : builder.GenFemaleName();
-    auto child = builder.CreateCharacter(name, dynasty, isMale,dynasty.get<CharacterCulture>().culture);
+    auto child = builder.CreateCharacter(name, dynasty, isMale,dynasty.get<CharacterCulture>().culture, 0);
+    void(ecs.set_scope(oldScope));
 
     return child;
 }

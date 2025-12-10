@@ -57,6 +57,7 @@ struct Renderer
 	// Map Shader
 	class Shader* mMapShader = nullptr;
 	class Shader* mPoliticalShader = nullptr;
+	class Shader* mHeatMapShader = nullptr;
 
     // Sprite vertex array
     class VertexArray * mSpriteVerts = nullptr;

@@ -2,6 +2,7 @@
 #include <flecs.h>
 #include <string>
 
+#include "Characters.hpp"
 #include "GameTime.hpp"
 #include "Random.hpp"
 
@@ -55,4 +56,7 @@ struct PregnancySaga
         BirthAnnounce,
     } stage = Attempt;
     flecs::entity father, mother, dynasty, child;
+    char nameBuffer[256];
+
+    void NextStage(flecs::entity entity, const GameTime &gameTime);
 };

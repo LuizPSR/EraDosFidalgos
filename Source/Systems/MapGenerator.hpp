@@ -13,6 +13,8 @@
 #include "Components/Culture.hpp"
 #include <SDL3/SDL.h>
 
+#include "Army.hpp"
+
 // Map constants
 constexpr int MAP_WIDTH = 90;
 constexpr int MAP_HEIGHT = 45;
@@ -549,6 +551,7 @@ static void GenerateMap(const flecs::world &ecs, uint32_t seed) {
         for (int y = 0; y < MAP_HEIGHT; ++y) {
             auto tile = ecs.entity().child_of(tilemap_entity);
 
+            tile.set<ProvinceArmy>({ .mAmount = 20 });
             auto& province = tile.ensure<Province>();
             province.mPosX = x;
             province.mPosY = y;

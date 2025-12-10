@@ -1,17 +1,38 @@
 #include "DrawProvinces.hpp"
 
+#include <algorithm>
 #include <SDL3/SDL.h>
 #include <GL/glew.h>
 #include <flecs.h>
+#include <glm/glm.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
+#include "Army.hpp"
 #include "Characters.hpp"
+#include "Diplomacy.hpp"
+#include "imgui.h"
 #include "Components/Camera.hpp"
 #include "Components/Province.hpp"
-#include "glm/ext/matrix_transform.hpp"
 #include "Renderer/Renderer.hpp"
 #include "Renderer/Shader.hpp"
 
 constexpr float TILE_SIZE_WORLD = 32.0f;
+glm::vec3 CultureColor(CultureType culture)
+{
+    switch (culture)
+    {
+    case SteppeNomads:
+        return {0.7f, 0.6f, 0.4f};
+    case FarmLanders:
+        return {0.4f, 0.8f, 0.3f};
+    case ForestFolk:
+        return {0.1f, 0.4f, 0.15f};
+    case HillDwellers:
+        return {0.5f, 0.5f, 0.55f};
+    default:
+        return {0.0f, 0.0f, 0.0f};
+    }
+}
 
 void renderPoliticalMap(flecs::iter &it)
 {
@@ -39,8 +60,115 @@ void renderPoliticalMap(flecs::iter &it)
             shader->SetMatrixUniform("uView", camera.mView);
             shader->SetMatrixUniform("uProj", camera.CalculateProjection(window));
             shader->SetMatrixUniform("uModel", model);
-            shader->SetVectorUniform("uRealmColor", glm::vec4(title.color, 0.7));
+            shader->SetVectorUniform("uRealmColor", glm::vec4(title.color, 1.0));
             shader->SetVectorUniform("uMousePos", window.GetMousePosNDC());
+
+            glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
+        }
+    }
+}
+
+void renderCultureMap(flecs::iter &it)
+{
+    while (it.next())
+    {
+        const auto &renderer = it.field_at<const Renderer>(2, 0);
+        const auto &camera = it.field_at<const Camera>(3, 0);
+        const auto &window = it.field_at<const Window>(4, 0);
+
+        const auto &shader = renderer.mPoliticalShader;
+        const auto &verts = renderer.mSpriteVerts;
+        shader->SetActive();
+        verts->SetActive();
+
+        const auto &provinces = it.field<const Province>(0);
+        for (size_t i: it)
+        {
+            const auto &province = provinces[i];
+            glm::mat4 model = glm::translate(
+                            glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f) * TILE_SIZE_WORLD),
+                            glm::vec3(province.mPosX, province.mPosY, 0.0f));
+
+            shader->SetMatrixUniform("uView", camera.mView);
+            shader->SetMatrixUniform("uProj", camera.CalculateProjection(window));
+            shader->SetMatrixUniform("uModel", model);
+            shader->SetVectorUniform("uRealmColor", glm::vec4(CultureColor(province.culture), 1.0));
+            shader->SetVectorUniform("uMousePos", window.GetMousePosNDC());
+
+            glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
+        }
+    }
+}
+
+void renderDiplomacyMap(flecs::iter &it, flecs::entity playerRealm)
+{
+    while (it.next())
+    {
+        const auto &renderer = it.field_at<const Renderer>(2, 0);
+        const auto &camera = it.field_at<const Camera>(3, 0);
+        const auto &window = it.field_at<const Window>(4, 0);
+
+        const auto &shader = renderer.mHeatMapShader;
+        const auto &verts = renderer.mSpriteVerts;
+        shader->SetActive();
+        verts->SetActive();
+
+        const auto &provinces = it.field<const Province>(0);
+        for (size_t i: it)
+        {
+            const auto &province = provinces[i];
+            const auto &relation = playerRealm.try_get<RealmRelation>(it.get_var("title"));
+
+            float relationF = relation ? (float(relation->relations) / 256.0f + 0.5f) : 0.5f;
+            if (it.get_var("title") == playerRealm) relationF = 1.0f;
+
+            glm::mat4 model = glm::translate(
+                            glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f) * TILE_SIZE_WORLD),
+                            glm::vec3(province.mPosX, province.mPosY, 0.0f));
+
+            shader->SetMatrixUniform("uView", camera.mView);
+            shader->SetMatrixUniform("uProj", camera.CalculateProjection(window));
+            shader->SetMatrixUniform("uModel", model);
+            shader->SetVectorUniform("uMousePos", window.GetMousePosNDC());
+            shader->SetVectorUniform("uMinColor", glm::vec4(1.0, 0.0, 0.0, 1.0));
+            shader->SetVectorUniform("uMaxColor", glm::vec4(0.0, 1.0, 0.0, 1.0));
+            shader->SetFloatUniform("uPercent", relationF);
+
+            glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
+        }
+    }
+}
+
+void renderArmyMap(flecs::iter &it)
+{
+    while (it.next())
+    {
+        const auto &renderer = it.field_at<const Renderer>(2, 0);
+        const auto &camera = it.field_at<const Camera>(3, 0);
+        const auto &window = it.field_at<const Window>(4, 0);
+
+        const auto &shader = renderer.mHeatMapShader;
+        const auto &verts = renderer.mSpriteVerts;
+        shader->SetActive();
+        verts->SetActive();
+
+        const auto &provinces = it.field<const Province>(0);
+        for (size_t i: it)
+        {
+            const auto &province = provinces[i];
+            const auto &army = it.entity(i).get<ProvinceArmy>();
+
+            glm::mat4 model = glm::translate(
+                            glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f) * TILE_SIZE_WORLD),
+                            glm::vec3(province.mPosX, province.mPosY, 0.0f));
+
+            shader->SetMatrixUniform("uView", camera.mView);
+            shader->SetMatrixUniform("uProj", camera.CalculateProjection(window));
+            shader->SetMatrixUniform("uModel", model);
+            shader->SetVectorUniform("uMousePos", window.GetMousePosNDC());
+            shader->SetVectorUniform("uMinColor", glm::vec4(0.0, 0.0, 0.0, 1.0));
+            shader->SetVectorUniform("uMaxColor", glm::vec4(1.0, 0.0, 0.0, 1.0));
+            shader->SetFloatUniform("uPercent", std::clamp<float>(army.mAmount / 100.0f, 0.0, 1.0));
 
             glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
         }
@@ -116,6 +244,8 @@ void RenderTileMap(flecs::iter &it)
     glBindVertexArray(0);
 }
 
+MapMode mapMode = MapMode::Geographic;
+
 void DoRenderTileMapSystem(const flecs::world &ecs)
 {
     auto &renderer = ecs.get_mut<Renderer>();
@@ -130,14 +260,42 @@ void DoRenderTileMapSystem(const flecs::world &ecs)
             RenderTileMap(it);
         });
 
-    ecs.system<const Province, const Title, const Renderer, const Camera, const Window>("RenderPoliticalMap")
+    flecs::query qPlayerRealm = ecs.query_builder<const Title>("PlayerRealm")
+        .with<RulerOf>("$this").src<Player>()
+        .without<InRealm>()
+        .build();
+
+    ecs.system<const Province, const Title, const Renderer, const Camera, const Window>("RenderMapTypes")
         .term_at(1).src("$title")
         .with<InRealm>("$title")
         .without<InRealm>(flecs::Wildcard).src("$title")
         .kind(flecs::PreStore)
         .run([=](flecs::iter &it)
         {
-            renderPoliticalMap(it);
+            switch (mapMode)
+            {
+            case MapMode::Geographic: break;
+            case MapMode::Political: renderPoliticalMap(it); break;
+            case MapMode::Cultural: renderCultureMap(it); break;
+            case MapMode::Diplomatic: renderDiplomacyMap(it, qPlayerRealm.first()); break;
+            case MapMode::Army: renderArmyMap(it); break;
+            }
+        });
+
+    ecs.system<>("ChooseMapMode")
+        .run([](flecs::iter)
+        {
+            if (ImGui::Begin("Modo de Mapa", 0, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                int mapModeInt = (int)mapMode;
+                ImGui::RadioButton("Geográfico", &mapModeInt, (int)MapMode::Geographic);
+                ImGui::RadioButton("Politico", &mapModeInt, (int)MapMode::Political);
+                ImGui::RadioButton("Cultural", &mapModeInt, (int)MapMode::Cultural);
+                ImGui::RadioButton("Diplomático", &mapModeInt, (int)MapMode::Diplomatic);
+                ImGui::RadioButton("Exército", &mapModeInt, (int)MapMode::Army);
+                mapMode = (MapMode)mapModeInt;
+            }
+            ImGui::End();
         });
 
     ecs.system<const Province, const Camera, const Window>("SetHoveredProvince")

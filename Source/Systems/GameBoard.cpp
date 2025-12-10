@@ -1,5 +1,10 @@
 #include "GameBoard.hpp"
+
+#include <algorithm>
+
+#include "Army.hpp"
 #include "Characters.hpp"
+#include "Diplomacy.hpp"
 #include "DrawProvinces.hpp"
 #include "imgui.h"
 #include "Game.hpp"
@@ -9,7 +14,7 @@
 #include "Systems/EstatePower.hpp"  // Para acessar EstatePowers
 #include "Random.hpp"  // Para Random::GetIntRange
 
-const int BUILDING_COST = 1000;  // ADICIONADO: Constante para custo de construções
+constexpr int BUILDING_COST = 3000;
 
 GameBoardScene::GameBoardScene(const flecs::world& ecs)
 {
@@ -31,18 +36,19 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
             if (input.Clicked) void(entity.add<ShowProvinceDetails>());
         });
 
-    ecs.system<const Province, const Title>("HoverProvinceName")
-        .term_at(1).src("$title")
+    ecs.system<const Province, const ProvinceArmy, const Title>("HoverProvinceName")
+        .term_at(2).src("$title")
         .with<Hovered>()
         .with<InRealm>("$title")
         .tick_source(tickTimer)
-        .each([](const Province &province, const Title &title)
+        .each([](const Province &province, const ProvinceArmy &army, const Title &title)
         {
             if (ImGui::GetIO().WantCaptureMouse) return;
             ImGui::BeginTooltip();
 
             ImGui::Text("%s - %s", province.name.data(), title.name.data());
             ImGui::Text("Posicao: (%zu, %zu)", province.mPosX, province.mPosY);
+            ImGui::Text("%u Tropas", army.mAmount);
 
             // Informacoes adicionais no tooltip
             ImGui::Separator();
@@ -53,15 +59,14 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
             ImGui::EndTooltip();
         });
 
-    // MODIFICADO: Parâmetros mudados para mutáveis para permitir construções
-    ecs.system<Province, Title, Character>("ShowProvinceDetails")
-        .term_at(1).src("$title")
-        .term_at(2).src("$character")
+    ecs.system<Province, ProvinceArmy, const Title, Character>("ShowProvinceDetails")
+        .term_at(2).src("$title")
+        .term_at(3).src("$character")
         .with<InRealm>("$title")
         .with<RuledBy>("$character").src("$title")
         .with<ShowProvinceDetails>()
         .tick_source(tickTimer)
-        .each([](flecs::iter &it, size_t i, Province &province, Title &title, Character &character)
+        .each([ecs](flecs::iter it, size_t i, Province &province, ProvinceArmy &army, const Title &title, Character &character)
         {
             flecs::entity entity = it.entity(i);
             flecs::world world = it.world();
@@ -92,6 +97,10 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                 ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoCollapse))
             {
+                ImGui::Text("Nome: %s", province.name.data());
+                ImGui::Text("Parte de: %s", title.name.data());
+                ImGui::Text("Governada por: %s", character.mName.data());
+                ImGui::Text("%d tropas estacionadas", army.mAmount);
                 // Cabecalho especial para capital
                 if (isCapital) {
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
@@ -420,6 +429,22 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                 ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 100) * 0.5f);
                 if (ImGui::Button("Fechar", ImVec2(100, 30))) {
                     open = false;
+                }
+
+                if (characterEntity.has<Player>())
+                {
+                    if (ImGui::Button("Mover Exércitos"))
+                    {
+                        ecs.entity<MovingArmies>().set<MovingArmies>({
+                            .mProvince = entity,
+                            .mAmount = 0,
+                        });
+                    }
+                    if (ImGui::Button("Comprar Tropas"))
+                    {
+                        character.mMoney -= 100;
+                        army.mAmount += 1;
+                    }
                 }
             }
 

@@ -128,6 +128,7 @@ void RegisterSystems(flecs::world &ecs) {
             ecs.remove<GameTime>();
             ecs.remove<EstatePowers>();
             ecs.remove<Camera>();
+            ecs.remove<MovingArmies>();
             ecs.entity("Kingdoms").destruct();
             ecs.entity("Events").destruct();
             ecs.remove<GameEnded>();
@@ -195,6 +196,7 @@ void ImportModules(flecs::world& ecs) {
     void(ecs.import<EventsModule>().child_of(gameUI));
     void(ecs.import<DiplomacyModule>().child_of(gameUI));
     void(ecs.import<ProvinceUpdates>().child_of(gameUI));
+    void(ecs.import<ArmyModule>().child_of(gameUI));
 }
 
 GameTickSources::GameTickSources(const flecs::world& ecs) {
