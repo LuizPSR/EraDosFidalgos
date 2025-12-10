@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <flecs.h>
+#include <glm/glm.hpp>
 
 #include "Components/Province.hpp"
 #include "Components/Culture.hpp"
@@ -8,6 +9,7 @@
 struct Title
 {
     std::string name;
+    glm::vec3 color;
 };
 
 struct Character

@@ -143,7 +143,10 @@ EntityHandler CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer)
 
     auto dynasty = ecs.entity().set<Dynasty>({ dName });
 
-    auto kingdom = ecs.entity().set<Title>({ dName + " Kingdom" });
+    auto kingdom = ecs.entity().set<Title>({
+        .name = dName + " Kingdom",
+        .color = glm::vec3(Random::GetFloat(), Random::GetFloat(), Random::GetFloat()),
+    });
     auto culture = GenCulture();
 
     void(dynasty.set<CharacterCulture>(CharacterCulture { culture }));

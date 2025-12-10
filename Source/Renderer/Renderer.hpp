@@ -42,8 +42,8 @@ struct Renderer
 	// OpenGL context
 	SDL_GLContext mContext = nullptr;
 
-    void Draw(RendererMode mode, const glm::mat4 &modelMatrix, const glm::vec2 &cameraPos, VertexArray *vertices,
-              const glm::vec3 &color,  Texture *texture = nullptr, const glm::vec4 &textureRect = glm::vec4(0, 0, 1, 1), float textureFactor = 1.0f);
+	void Draw(RendererMode mode, const glm::mat4 &modelMatrix, const glm::vec2 &cameraPos, VertexArray *vertices,
+	          const glm::vec3 &color,  Texture *texture = nullptr, const glm::vec4 &textureRect = glm::vec4(0, 0, 1, 1), float textureFactor = 1.0f);
 
 	bool LoadShaders();
     void CreateSpriteVerts();
@@ -56,6 +56,7 @@ struct Renderer
 
 	// Map Shader
 	class Shader* mMapShader = nullptr;
+	class Shader* mPoliticalShader = nullptr;
 
     // Sprite vertex array
     class VertexArray * mSpriteVerts = nullptr;
