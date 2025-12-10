@@ -156,11 +156,12 @@ void MainMenuModule::ShowMainMenu(const flecs::world& ecs, GameTickSources& tick
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 250) * 0.5f);
         if (ImGui::Button("START", ImVec2(250, 38))) {
             auto mainMenuEntity = ecs.entity<MainMenuModule>();
-            auto testUIEntity = GetEntityByName(ecs, "TestUIModule");
+            auto testUIEntity = GetEntityByName(ecs, "TestUIModule")
+            auto gameOverEntity = GetEntityByName(ecs, "GameOverModule");;
 
             if (mainMenuEntity.is_valid()) mainMenuEntity.disable();
             if (testUIEntity.is_valid()) testUIEntity.enable();
-
+            if (gameOverEntity.is_valid()) gameOverEntity.disable();
             CreateKingdoms(ecs);
 
             tickSources.mTickTimer.start();

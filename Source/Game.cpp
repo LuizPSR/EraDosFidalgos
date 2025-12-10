@@ -2,6 +2,7 @@
 #include <fstream>
 #include <SDL3/SDL.h>
 #include <imgui.h>
+#include <string>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_opengl3.h>
 #include <filesystem>
@@ -24,6 +25,7 @@
 #include "Systems/Sound.hpp"
 #include "Systems/MapGenerator.hpp"
 #include "Systems/ProvinceUpdate.hpp"
+#include "UI/GameOver.hpp"
 
 bool Initialize(flecs::world &ecs) {
     Random::Init();
@@ -127,14 +129,15 @@ void RegisterSystems(flecs::world &ecs) {
 }
 
 void ImportModules(flecs::world& ecs) {
-    // UI Modules - VOLTAR AO FORMATO ORIGINAL
+    // UI Modules
     void(ecs.import<MainMenuModule>());
     void(ecs.import<PauseMenuModule>().disable());
     void(ecs.import<TestUIModule>().disable());
+    void(ecs.import<GameOverModule>().disable());  // Adicionar esta linha
 
     flecs::entity testUI = ecs.entity<TestUIModule>();
 
-    // Game Systems - VOLTAR AO FORMATO ORIGINAL
+    // Game Systems
     void(ecs.import<SoundModule>().disable());
     void(ecs.import<CharactersModule>().child_of(testUI));
     void(ecs.import<GameBoardScene>().child_of(testUI));

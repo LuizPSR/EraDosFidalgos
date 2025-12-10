@@ -6,6 +6,9 @@
 #include "Game.hpp"
 
 #include "EstatePower.hpp"
+#include "Components/Dynasty.hpp"
+#include "UI/GameOver.hpp"
+#include "UI/UIScreens/UICommon.hpp"
 
 void CenterNextImGuiWindow()
 {
@@ -222,50 +225,111 @@ void DoCharacterAgingSystem(const flecs::world& ecs, const GameTickSources& time
 
 void DoGameOverEvents(const flecs::world& ecs, const GameTickSources& timers)
 {
+    // Sistema para morte do jogador
     ecs.system<const Character>()
         .entity(ecs.entity<Player>())
         .with<Deceased>()
         .tick_source(timers.mTickTimer)
-        .each([](flecs::entity entity, const Character &character)
+        .each([&ecs](flecs::entity entity, const Character &character)
         {
-            void(entity.add<PausesGame>());
-            if (ImGui::Begin("Você Morreu"))
-            {
-                ImGui::Text("Após uma vida, você retornou ao pó, e deixa um reino a seus filhos.");
-                ImGui::Text("Vivestes por %zd anos", character.mAgeDays / 360);
-                ImGui::Text("Volte ao menu para reiniciar.");
+            // Coletar informações do jogador
+            flecs::entity playerEntity = ecs.entity<Player>();
+            const Character* playerChar = playerEntity.try_get<Character>();
+
+            // Obter título do jogador
+            std::string titleName = "Sem título";
+            flecs::entity titleEntity = playerEntity.target<RulerOf>();
+            if (titleEntity.is_valid()) {
+                const Title* title = titleEntity.try_get<Title>();
+                if (title) titleName = title->name;
             }
-            ImGui::End();
+
+            // Obter dinastia
+            std::string dynastyName = "Sem dinastia";
+            flecs::entity dynastyEntity = playerEntity.target<DynastyMember>();
+            if (dynastyEntity.is_valid()) {
+                const Dynasty* dynasty = dynastyEntity.try_get<Dynasty>();
+                if (dynasty) dynastyName = dynasty->name;
+            }
+
+            // Preparar mensagem de game over
+            std::string cause = "Após uma vida, você retornou ao pó, e deixa um reino a seus filhos.\n";
+            cause += "Vivestes por " + std::to_string(character.mAgeDays / 360) + " anos.\n";
+            cause += "Seu reinado chegou ao fim natural.";
+
+            // Configurar informações para a tela de game over
+            GameOverModule::SetGameOverInfo(
+                cause,
+                playerChar ? playerChar->mName : "",
+                playerChar ? playerChar->mAgeDays / 360 : 0,
+                titleName,
+                dynastyName,
+                playerChar ? playerChar->MoneyFloat() : 0.0f
+            );
+
+            // Desativar UI do jogo e ativar tela de game over
+            auto testUIEntity = UICommon::GetEntityByName(ecs, "TestUIModule");
+            auto gameOverEntity = UICommon::GetEntityByName(ecs, "GameOverModule");
+
+            if (testUIEntity.is_valid()) testUIEntity.disable();
+            if (gameOverEntity.is_valid()) gameOverEntity.enable();
+
+            // Pausar o jogo
+            void(entity.add<PausesGame>());
         });
 
+    // Sistema para colapso do reino (poder dos estados)
     ecs.system<const EstatePowers>()
         .tick_source(timers.mTickTimer)
-        .each([](flecs::iter &it, size_t, const EstatePowers &powers)
+        .each([&ecs](flecs::iter &it, size_t, const EstatePowers &powers)
         {
             if (powers.mCommonersPower > -100 && powers.mCommonersPower < 100
                 && powers.mNobilityPower > -100 && powers.mNobilityPower < 100
                 && powers.mClergyPower > -100 && powers.mClergyPower < 100)
                 return;
 
-            void(it.world().entity("GameOver").add<PausesGame>());
-            if (ImGui::Begin("Você Morreu"))
-            {
-                ImGui::Text("O reino colapsou devido à má gestão.");
-                if (powers.mCommonersPower <= -100)
-                    ImGui::Text("A plebe, irada pela vida precária, invade o palácio.");
-                if (powers.mCommonersPower >= 100)
-                    ImGui::Text("A burguesia resolve livrar-se da família real e instaurar uma república.");
-                if (powers.mClergyPower <= -100)
-                    ImGui::Text("Devido à perseguição extrema ao clero, sofreu um julgamento divino.");
-                if (powers.mClergyPower >= 100)
-                    ImGui::Text("Espiritualistas tomam conta do clero e da nação, proclamando que a matéria é má e que ninguém deve obedecer a rei algum.");
-                if (powers.mNobilityPower <= -100)
-                    ImGui::Text("Os nobres vassalos não mais respeitam os seus contratos, já que você não respeitou sua parte, e o reino já não existe.");
-                if (powers.mNobilityPower >= 100)
-                    ImGui::Text("O poder que rege no reino já não é mais o seu, o povo respeita e admira mais a nobreza local, e eles decidem dividir o poder e eleger um novo monarca entre si.");
+            // Coletar informações do jogador
+            flecs::entity playerEntity = it.world().entity<Player>();
+            const Character* playerChar = playerEntity.try_get<Character>();
+
+            // Obter título do jogador
+            std::string titleName = "Sem título";
+            flecs::entity titleEntity = playerEntity.target<RulerOf>();
+            if (titleEntity.is_valid()) {
+                const Title* title = titleEntity.try_get<Title>();
+                if (title) titleName = title->name;
             }
-            ImGui::Text("Volte ao menu para reiniciar.");
-            ImGui::End();
+
+            // Obter dinastia
+            std::string dynastyName = "Sem dinastia";
+            flecs::entity dynastyEntity = playerEntity.target<DynastyMember>();
+            if (dynastyEntity.is_valid()) {
+                const Dynasty* dynasty = dynastyEntity.try_get<Dynasty>();
+                if (dynasty) dynastyName = dynasty->name;
+            }
+
+            // Preparar mensagem de game over
+            std::string cause = GameOverModule::FormatGameOverCause(&powers);
+
+            // Configurar informações para a tela de game over
+            GameOverModule::SetGameOverInfo(
+                cause,
+                playerChar ? playerChar->mName : "",
+                playerChar ? playerChar->mAgeDays / 360 : 0,
+                titleName,
+                dynastyName,
+                playerChar ? playerChar->MoneyFloat() : 0.0f
+            );
+
+            // Desativar UI do jogo e ativar tela de game over
+            auto testUIEntity = UICommon::GetEntityByName(it.world(), "TestUIModule");
+            auto gameOverEntity = UICommon::GetEntityByName(it.world(), "GameOverModule");
+
+            if (testUIEntity.is_valid()) testUIEntity.disable();
+            if (gameOverEntity.is_valid()) gameOverEntity.enable();
+
+            // Pausar o jogo
+            void(it.world().entity("GameOver").add<PausesGame>());
         });
 }
 

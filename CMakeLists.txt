@@ -26,7 +26,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "Source/*.hpp")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "Source/*.cpp")
-add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})
+add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES}
+        Source/UI/GameOver.cpp
+        Source/UI/GameOver.hpp)
 
 # MSVC não define M_PI sem isso
 target_compile_definitions(${PROJECT_NAME} PRIVATE _USE_MATH_DEFINES)
