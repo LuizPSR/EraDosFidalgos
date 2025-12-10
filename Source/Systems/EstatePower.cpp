@@ -48,18 +48,17 @@ void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers
 
     const auto powerEvents = readEstatePowerEventsFromFile();
 
-    ecs.system<>("PowerEventsSpawner")
+    ecs.system<const GameTime>("PowerEventsSpawner")
         .tick_source(timers.mMonthTimer)
-        .run([=](const flecs::iter &it)
+        .each([=](const GameTime &gameTime)
         {
-            const auto &ecs = it.world();
             if (Random::GetFloat() < 0.2f)
             {
                 auto event = powerEvents[Random::GetIntRange(0, powerEvents.size() - 1)];
                 void(ecs.entity()
                     .child_of(ecs.entity("Events"))
                     .set<EstatePowerEvent>(event)
-                    .add<FiredEvent>());
+                    .set(EventSchedule::InXDays(gameTime, Random::GetIntRange(0, 30))));
             }
         });
 

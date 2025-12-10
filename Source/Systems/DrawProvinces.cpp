@@ -5,6 +5,7 @@
 #include <flecs.h>
 
 #include "Characters.hpp"
+#include "imgui.h"
 #include "Components/Camera.hpp"
 #include "Components/Province.hpp"
 #include "glm/ext/matrix_transform.hpp"
@@ -116,6 +117,8 @@ void RenderTileMap(flecs::iter &it)
     glBindVertexArray(0);
 }
 
+MapMode mapMode = MapMode::Geographic;
+
 void DoRenderTileMapSystem(const flecs::world &ecs)
 {
     auto &renderer = ecs.get_mut<Renderer>();
@@ -137,7 +140,24 @@ void DoRenderTileMapSystem(const flecs::world &ecs)
         .kind(flecs::PreStore)
         .run([=](flecs::iter &it)
         {
-            renderPoliticalMap(it);
+            if (mapMode == MapMode::Political)
+                renderPoliticalMap(it);
+        });
+
+    ecs.system<>("ChooseMapMode")
+        .run([](flecs::iter)
+        {
+            if (ImGui::Begin("Modo de Mapa", 0, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                int mapModeInt = (int)mapMode;
+                ImGui::RadioButton("Geográfico", &mapModeInt, (int)MapMode::Geographic);
+                ImGui::RadioButton("Politico", &mapModeInt, (int)MapMode::Political);
+                ImGui::RadioButton("Cultural", &mapModeInt, (int)MapMode::Cultural);
+                ImGui::RadioButton("Distância", &mapModeInt, (int)MapMode::Distance);
+                ImGui::RadioButton("Diplomático", &mapModeInt, (int)MapMode::Diplomatic);
+                mapMode = (MapMode)mapModeInt;
+            }
+            ImGui::End();
         });
 
     ecs.system<const Province, const Camera, const Window>("SetHoveredProvince")

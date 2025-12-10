@@ -70,7 +70,7 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
     const auto path = std::filesystem::path(SDL_GetBasePath()) / "Assets" / "DiploEvents.toml";
     static toml::table eventsTbl = toml::parse_file(path.string());
 
-    void(ecs.system<const Title, const Title, const Character, const Character>("DiploEventSpawner")
+    void(ecs.system<const Title, const Title, const Character, const Character, const GameTime>("DiploEventSpawner")
         .term_at(0).src("$realm")
         .term_at(1).src("$neighbor")
         .term_at(2).src("$this")
@@ -80,7 +80,7 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
         .with<Neighboring>("$neighbor").src("$realm")
         .with<RulerOf>("$neighbor").src("$neighborRuler")
         .tick_source(timers.mMonthTimer)
-        .each([=](flecs::iter &it, size_t, const Title &a, const Title &b, const Character &ar, const Character &br)
+        .each([=](flecs::iter &it, size_t, const Title &a, const Title &b, const Character &ar, const Character &br, const GameTime &gameTime)
         {
             if (Random::GetFloat() >= 0.2f) return;
             const auto *eventsArray = eventsTbl["event"].as_array();
@@ -96,19 +96,21 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
             });
             it.world().entity()
                 .child_of(ecs.entity("Events"))
-                .add<PausesGame>()
                 .set<DiploEvent>({
                     .mTitle = applySubstitutions(tbl["title"].as_string()->get(), a, b, ar, br),
                     .mMessage = applySubstitutions(tbl["message"].as_string()->get(), a, b, ar, br),
                     .mChoices = choices,
                     .mSourceRealm = it.get_var("realm"),
                     .mTargetRealm = it.get_var("neighbor")
-                });
+                })
+                .set(EventSchedule::InXDays(gameTime, Random::GetIntRange(0, 30)));
         }));
 
     ecs.system<const DiploEvent>("RenderDiploEvents")
+        .with<FiredEvent>()
         .each([](flecs::entity entity, const DiploEvent &event)
         {
+            void(entity.add<PausesGame>());
             std::string title = event.mTitle + "##" + std::to_string(entity.id());
             if (ImGui::Begin(title.data(), 0, ImGuiWindowFlags_AlwaysAutoResize))
             {
