@@ -217,77 +217,80 @@ GameBoardScene::GameBoardScene(const flecs::world& ecs)
                 // ============================================================
                 // ADICIONADO: SEÇÃO DE CONSTRUÇÕES
                 // ============================================================
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.9f, 1.0f, 1.0f));
-                ImGui::Text("CONSTRUCOES");
-                ImGui::PopStyleColor();
 
-                ImGui::Spacing();
+                if (characterEntity.has<Player>()) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.9f, 1.0f, 1.0f));
+                    ImGui::Text("CONSTRUCOES");
+                    ImGui::PopStyleColor();
 
-                // Estradas
-                ImGui::Text("Estradas         ");
-                ImGui::SameLine();
-                if (ImGui::Button("-##1") && province.roads_level > 0) {
-                    province.roads_level--;
-                }
-                ImGui::SameLine();
-                ImGui::Text("%u", province.roads_level);
-                ImGui::SameLine();
-                if (ImGui::Button("+##1") && province.roads_level < 5 && character.mMoney >= BUILDING_COST) {
-                    character.mMoney -= BUILDING_COST;
-                    province.roads_level++;
-                }
+                    ImGui::Spacing();
 
-                // Fortificação
-                ImGui::Text("Fortificacao     ");
-                ImGui::SameLine();
-                if (ImGui::Button("-##2") && province.fortification_level > 0) {
-                    province.fortification_level--;
-                }
-                ImGui::SameLine();
-                ImGui::Text("%u", province.fortification_level);
-                ImGui::SameLine();
-                if (ImGui::Button("+##2") && province.fortification_level < 5 && character.mMoney >= BUILDING_COST) {
-                    character.mMoney -= BUILDING_COST;
-                    province.fortification_level++;
-                }
+                    // Estradas
+                    ImGui::Text("Estradas         ");
+                    ImGui::SameLine();
+                    if (ImGui::Button("-##1") && province.roads_level > 0) {
+                        province.roads_level--;
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text("%u", province.roads_level);
+                    ImGui::SameLine();
+                    if (ImGui::Button("+##1") && province.roads_level < 5 && character.mMoney >= BUILDING_COST) {
+                        character.mMoney -= BUILDING_COST;
+                        province.roads_level++;
+                    }
 
-                // Mercados
-                ImGui::Text("Mercados         ");
-                ImGui::SameLine();
-                if (ImGui::Button("-##3") && province.market_level > 0) {
-                    province.market_level--;
-                }
-                ImGui::SameLine();
-                ImGui::Text("%u", province.market_level);
-                ImGui::SameLine();
-                if (ImGui::Button("+##3") && province.market_level < 5 && character.mMoney >= BUILDING_COST) {
-                    character.mMoney -= BUILDING_COST;
-                    province.market_level++;
-                }
+                    // Fortificação
+                    ImGui::Text("Fortificacao     ");
+                    ImGui::SameLine();
+                    if (ImGui::Button("-##2") && province.fortification_level > 0) {
+                        province.fortification_level--;
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text("%u", province.fortification_level);
+                    ImGui::SameLine();
+                    if (ImGui::Button("+##2") && province.fortification_level < 5 && character.mMoney >= BUILDING_COST) {
+                        character.mMoney -= BUILDING_COST;
+                        province.fortification_level++;
+                    }
 
-                // Templos
-                ImGui::Text("Templos          ");
-                ImGui::SameLine();
-                if (ImGui::Button("-##4") && province.temples_level > 0) {
-                    province.temples_level--;
-                }
-                ImGui::SameLine();
-                ImGui::Text("%u", province.temples_level);
-                ImGui::SameLine();
-                if (ImGui::Button("+##4") && province.temples_level < 5 && character.mMoney >= BUILDING_COST) {
-                    character.mMoney -= BUILDING_COST;
-                    province.temples_level++;
-                }
+                    // Mercados
+                    ImGui::Text("Mercados         ");
+                    ImGui::SameLine();
+                    if (ImGui::Button("-##3") && province.market_level > 0) {
+                        province.market_level--;
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text("%u", province.market_level);
+                    ImGui::SameLine();
+                    if (ImGui::Button("+##3") && province.market_level < 5 && character.mMoney >= BUILDING_COST) {
+                        character.mMoney -= BUILDING_COST;
+                        province.market_level++;
+                    }
 
-                ImGui::Spacing();
-                ImGui::Separator();
-                ImGui::Spacing();
+                    // Templos
+                    ImGui::Text("Templos          ");
+                    ImGui::SameLine();
+                    if (ImGui::Button("-##4") && province.temples_level > 0) {
+                        province.temples_level--;
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text("%u", province.temples_level);
+                    ImGui::SameLine();
+                    if (ImGui::Button("+##4") && province.temples_level < 5 && character.mMoney >= BUILDING_COST) {
+                        character.mMoney -= BUILDING_COST;
+                        province.temples_level++;
+                    }
+
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                }
                 // ============================================================
                 // FIM DA SEÇÃO DE CONSTRUÇÕES
                 // ============================================================
 
                 // BOTAO ESPECIAL APENAS PARA CAPITAL
-                if (isCapital) {
+                if (isCapital && !characterEntity.has<Player>()) {
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.9f, 0.5f, 1.0f));
                     ImGui::Text("ACOES ESPECIAIS DA CAPITAL");
                     ImGui::PopStyleColor();
