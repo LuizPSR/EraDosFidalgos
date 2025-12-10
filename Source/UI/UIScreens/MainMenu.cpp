@@ -4,6 +4,7 @@
 #include <SDL3/SDL.h>
 
 #include "GameUIModule.hpp"
+#include "Components/Camera.hpp"
 #include "Renderer/Renderer.hpp"
 #include "Renderer/Texture.hpp"
 #include "Systems/Characters.hpp"
@@ -150,14 +151,11 @@ void MainMenuModule::ShowMainMenu(const flecs::world& ecs, GameTickSources& tick
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 250) * 0.5f);
         if (ImGui::Button("START", ImVec2(250, 38))) {
             auto mainMenuEntity = ecs.entity<MainMenuModule>();
-            auto testUIEntity = ecs.entity<GameUIModule>();
+            auto gameUIEntity = ecs.entity<GameUIModule>();
 
-            if (mainMenuEntity.is_valid()) mainMenuEntity.disable();
-            if (testUIEntity.is_valid()) testUIEntity.enable();
-
-            CreateKingdoms(ecs);
-
-            tickSources.mTickTimer.start();
+            if (mainMenuEntity.is_valid()) void(mainMenuEntity.disable());
+            if (gameUIEntity.is_valid()) void(gameUIEntity.enable());
+            ecs.add<GameStarted>();
         }
 
         ImGui::Spacing();

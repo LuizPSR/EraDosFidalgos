@@ -1,9 +1,12 @@
 #include <flecs.h>
+#include <toml++/toml.hpp>
+#include <filesystem>
 
 #include "Diplomacy.hpp"
-
 #include "Characters.hpp"
+#include "Events.hpp"
 #include "Game.hpp"
+#include "imgui.h"
 #include "MapGenerator.hpp"
 #include "Random.hpp"
 #include "Components/Province.hpp"
@@ -23,7 +26,6 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
     void(ecs.system<const TileMap>("UpdateNeighbors")
         .write<Neighboring>()
         .tick_source(timers.mWeekTimer)
-        .multi_threaded()
         .each([=](const flecs::iter &it, size_t, const TileMap &tileMap)
         {
             const auto &ecs = it.world();
@@ -42,15 +44,61 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
             }
         }));
 
-    void(ecs.system<const Title, const Title>("DiploEvents")
+    const auto path = std::filesystem::path(SDL_GetBasePath()) / "Assets" / "DiploEvents.toml";
+    static toml::table eventsTbl = toml::parse_file(path.string());
+
+    void(ecs.system<const Title, const Title>("DiploEventSpawner")
         .term_at(0).src("$realm")
         .term_at(1).src("$neighbor")
         .with<Player>()
         .with<RulerOf>("$realm")
         .with<Neighboring>("$neighbor").src("$realm")
         .tick_source(timers.mMonthTimer)
-        .each([=](const Title &a, const Title &b)
+        .each([=](flecs::iter &it, size_t, const Title &a, const Title &b)
         {
-            if (Random::GetFloat() >= 0.2f) return;
+            // TODO: choose an event chance
+            // if (Random::GetFloat() >= 0.2f) return;
+            const auto *eventsArray = eventsTbl["event"].as_array();
+            size_t idx = Random::GetIntRange(0, eventsArray->size() - 1);
+            const auto &tbl = *eventsArray->get_as<toml::table>(idx);
+            std::vector<DiploEventChoice> choices;
+            tbl["option"].as_array()->for_each([&](const toml::table &t)
+            {
+                choices.push_back((DiploEventChoice){
+                    .mText = t["text"].as_string()->get(),
+                    .mRelationChange = (int8_t)(t["relation_change"].as_integer()->get()),
+                });
+            });
+            it.world().entity()
+                .add<PausesGame>()
+                .set<DiploEvent>({
+                    .mTitle = tbl["title"].as_string()->get(),
+                    .mMessage = tbl["message"].as_string()->get(),
+                    .mChoices = choices,
+                });
         }));
+
+    ecs.system<const DiploEvent>("RenderDiploEvents")
+        .each([](flecs::entity entity, const DiploEvent &event)
+        {
+            std::string title = event.mTitle + "##" + std::to_string(entity.id());
+            ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Appearing);
+            if (ImGui::Begin(title.data()))
+            {
+                ImGui::TextWrapped("%s", event.mMessage.data());
+                for (const auto &choice: event.mChoices)
+                {
+                    if (ImGui::Button(choice.mText.data()))
+                    {
+                        // TODO
+                        entity.destruct();
+                    }
+                    if (ImGui::BeginItemTooltip())
+                    {
+                        ImGui::EndTooltip();
+                    }
+                }
+            }
+            ImGui::End();
+        });
 }

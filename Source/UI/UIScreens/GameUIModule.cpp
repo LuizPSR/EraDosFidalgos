@@ -83,6 +83,36 @@ static ImU32 GetPowerColor(int power) {
 GameUIModule::GameUIModule(flecs::world& ecs) {
     const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
 
+    void(ecs.entity<GameStarted>().add(flecs::Singleton));
+    void(ecs.entity<GameEnded>().add(flecs::Singleton));
+
+    struct InitCamera {};
+    void(ecs.component<InitCamera>().add(flecs::Singleton));
+    ecs.system<Camera, const Province>("CameraStartAtCapital")
+        .term_at(1).src("$province")
+        .with<CapitalOf>("$title").src("$province")
+        .with<RulerOf>("$title")
+        .with<Player>()
+        .with<InitCamera>()
+        .each([=](flecs::iter &it, size_t, Camera &camera, const Province &capital)
+        {
+            camera.mTarget = glm::vec2(capital.mPosX, capital.mPosY) * 32.0f;
+            it.world().remove<InitCamera>();
+        });
+    ecs.system<GameTickSources>("SetupGame")
+        .with<GameStarted>()
+        .each([=](flecs::iter &it, size_t i, GameTickSources &tickSources)
+        {
+            const auto &ecs = it.world();
+
+            CreateKingdoms(ecs);
+
+            tickSources.mTickTimer.start();
+
+            void(ecs.add<InitCamera>());
+            void(ecs.remove<GameStarted>());
+        });
+
     ecs.system<GameTickSources>("UpdateUI")
         .tick_source(tickTimer)
         .kind(flecs::OnUpdate)
@@ -116,6 +146,10 @@ void GameUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
     if (ImGui::Begin("Menu")) {
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)",
                    1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Separator();
+
+        const auto &cameraTarget = ecs.get<Camera>().mTarget;
+        ImGui::Text("Camera target: %.2f %.2f", cameraTarget.x, cameraTarget.y);
         ImGui::Separator();
 
         glm::vec2 mPos;

@@ -20,9 +20,7 @@ void Camera::RecalculateView()
     mPosition.y = mTarget.y;
     mPosition.z = 1.0f;
 
-    mTarget.z = 0.0f;
-
-    mView = glm::lookAt(mPosition, mTarget, mUp);
+    mView = glm::lookAt(mPosition, glm::vec3(mTarget, 0), mUp);
 }
 
 float Camera::GetProjectionScale() const
@@ -55,7 +53,7 @@ void UpdateCamera(Camera &camera, const InputState &input, const Window &window,
     if (glm::length2(velocity) > 0.0f)
     {
         const float scale = camera.GetProjectionScale() * deltaTime;
-        camera.mTarget += glm::vec3{velocity.x, velocity.y, 0.0f} * scale * shiftModifier;
+        camera.mTarget += glm::vec2{velocity.x, velocity.y} * scale * shiftModifier;
     }
     if (fabsf(camera.mZoomInertia) > 0.0f)
     {

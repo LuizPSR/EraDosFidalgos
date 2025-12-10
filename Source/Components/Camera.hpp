@@ -17,7 +17,7 @@ struct Camera
 
     glm::vec2 mVelocity{};
     glm::vec3 mPosition{};
-    glm::vec3 mTarget{};
+    glm::vec2 mTarget{};
     const glm::vec3 mUp{0.0f, 1.0f, 0.0f};
 
     float mZoomLevel = 50.0f;
@@ -25,7 +25,7 @@ struct Camera
 
     void RecalculateView();
     float GetProjectionScale() const;
-    glm::mat4 CalculateProjection(const Window& window) const;
+    glm::mat4 CalculateProjection(const Window &window) const;
     glm::vec3 NDCToWorld(const glm::vec2& NDC, const Window& window) const;
 };
 
