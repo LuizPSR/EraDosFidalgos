@@ -172,10 +172,16 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
             while (points > 0) {
                 points--;
 
-                auto index = Random::GetIntRange(0, provinces.size() - 1);
-                auto p = provinces.at(index);
+                if (provinces.empty())
+                {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Player has no provinces???");
+                } else
+                {
+                    auto index = Random::GetIntRange(0, provinces.size() - 1);
+                    auto p = provinces.at(index);
 
-                p.development += change;
+                    p.development += change;
+                }
             }
 
             // Nobles and Clergy Power

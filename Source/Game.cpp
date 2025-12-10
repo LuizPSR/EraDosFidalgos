@@ -52,8 +52,7 @@ bool Initialize(flecs::world &ecs) {
         .add<InputState>());
 
     void(ecs.component<Camera>()
-        .add(flecs::Singleton)
-        .add<Camera>());
+        .add(flecs::Singleton));
 
     void(ecs.component<GameTickSources>()
         .add(flecs::Singleton)
@@ -88,20 +87,28 @@ void RegisterSystems(flecs::world &ecs) {
     void(ecs.entity<GameEnded>().add(flecs::Singleton));
 
     const auto playerCapital = ecs.query_builder<const Province>("PlayerCapital")
-        .term_at(0).src("$province")
-        .with<CapitalOf>("$title").src("$province")
-        .with<RulerOf>("$title")
-        .with<Player>()
+        .with<CapitalOf>("$title")
+        .with<RulerOf>("$title").src<Player>()
         .build();
 
-    ecs.system<Camera, GameTickSources>("SetupGame")
+    ecs.system<GameTickSources>("SetupGame")
         .with<GameStarted>()
         .immediate()
-        .each([=](flecs::iter, size_t, Camera &camera, GameTickSources &tickSources)
+        .each([=](flecs::iter, size_t, GameTickSources &tickSources)
         {
             ecs.defer_suspend();
 
+            const auto oldScope = ecs.set_scope(ecs.entity("Kingdoms"));
+            void(ecs.entity<Player>().add<Player>());
+            void(ecs.add<GameTime>());
+            void(ecs.add<EstatePowers>());
+            void(ecs.add<Camera>());
+            GenerateMap(ecs, 36533);
             CreateKingdoms(ecs);
+            void(ecs.set_scope(oldScope));
+
+            auto &camera = ecs.get_mut<Camera>();
+
             tickSources.mTickTimer.start();
 
             playerCapital.each([&](const Province &capital)
@@ -118,7 +125,11 @@ void RegisterSystems(flecs::world &ecs) {
         .each([=](flecs::iter, size_t)
         {
             ecs.entity<Player>().clear();
-            ecs.delete_with<Character>();
+            ecs.remove<GameTime>();
+            ecs.remove<EstatePowers>();
+            ecs.remove<Camera>();
+            ecs.entity("Kingdoms").destruct();
+            ecs.entity("Events").destruct();
             ecs.remove<GameEnded>();
         });
 
@@ -158,13 +169,6 @@ void RegisterSystems(flecs::world &ecs) {
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             renderer.Present();
         });
-
-    // Register the map generation system
-    RegisterMapGenerationSystem(ecs);
-
-    // Trigger map generation
-    ecs.entity()
-        .set<GenerateMap>({36533});
 }
 
 void ImportModules(flecs::world& ecs) {

@@ -176,8 +176,7 @@ EntityHandler CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer)
 
 void DoCreateCharacterBuilder(const flecs::world& ecs)
 {
-    void(ecs.component<CharacterBuilder>()
-        .add(flecs::Singleton));
+    void(ecs.component<CharacterBuilder>().add(flecs::Singleton));
 
     const auto path = std::filesystem::path(SDL_GetBasePath()) / "Assets" / "Names.toml";
     static toml::table tbl = toml::parse_file(path.string());
@@ -195,8 +194,6 @@ void DoCreateCharacterBuilder(const flecs::world& ecs)
 CharactersModule::CharactersModule(const flecs::world& ecs)
 {
     const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
-
-    void(ecs.entity<Player>().add<Player>());
 
     DoCreateCharacterBuilder(ecs);
 

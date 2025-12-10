@@ -44,9 +44,7 @@ std::vector<EstatePowerEvent> readEstatePowerEventsFromFile()
 
 void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers)
 {
-    void(ecs.component<EstatePowers>()
-        .add(flecs::Singleton)
-        .add<EstatePowers>());
+    void(ecs.component<EstatePowers>().add(flecs::Singleton));
 
     const auto powerEvents = readEstatePowerEventsFromFile();
 
@@ -59,6 +57,7 @@ void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers
             {
                 auto event = powerEvents[Random::GetIntRange(0, powerEvents.size() - 1)];
                 void(ecs.entity()
+                    .child_of(ecs.entity("Events"))
                     .set<EstatePowerEvent>(event)
                     .add<FiredEvent>());
             }

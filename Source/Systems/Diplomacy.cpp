@@ -79,6 +79,7 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
                 });
             });
             it.world().entity()
+                .child_of(ecs.entity("Events"))
                 .add<PausesGame>()
                 .set<DiploEvent>({
                     .mTitle = tbl["title"].as_string()->get(),

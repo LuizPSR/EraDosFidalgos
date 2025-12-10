@@ -57,11 +57,6 @@ struct CultureData {
     CultureType culture;
 };
 
-// Tag component to trigger map generation
-struct GenerateMap {
-    uint32_t seed = 42;
-};
-
 // Perlin noise implementation
 namespace {
 
@@ -525,74 +520,65 @@ void assign_cultures(uint32_t seed,
 
 } // anonymous namespace
 
-// System to generate the map
-inline void RegisterMapGenerationSystem(flecs::world& world) {
-    world.system<const GenerateMap>()
-        .kind(flecs::OnStart)
-        .each([](flecs::entity e, const GenerateMap& gen) {
-            // Create height map
-            std::vector<std::vector<float>> height_map(MAP_WIDTH, std::vector<float>(MAP_HEIGHT));
-            generate_height_map(gen.seed, height_map);
+static void GenerateMap(const flecs::world &ecs, uint32_t seed) {
+    // Create height map
+    std::vector<std::vector<float>> height_map(MAP_WIDTH, std::vector<float>(MAP_HEIGHT));
+    generate_height_map(seed, height_map);
 
-            // Create terrain map
-            std::vector<std::vector<TerrainType>> terrain_map(MAP_WIDTH, std::vector<TerrainType>(MAP_HEIGHT));
-            label_terrain(height_map, terrain_map);
-            keep_largest_landmass(terrain_map);
+    // Create terrain map
+    std::vector<std::vector<TerrainType>> terrain_map(MAP_WIDTH, std::vector<TerrainType>(MAP_HEIGHT));
+    label_terrain(height_map, terrain_map);
+    keep_largest_landmass(terrain_map);
 
-            // Create biome map
-            std::vector<std::vector<BiomeType>> biome_map(MAP_WIDTH, std::vector<BiomeType>(MAP_HEIGHT));
-            assign_biomes(gen.seed, terrain_map, height_map, biome_map);
+    // Create biome map
+    std::vector<std::vector<BiomeType>> biome_map(MAP_WIDTH, std::vector<BiomeType>(MAP_HEIGHT));
+    assign_biomes(seed, terrain_map, height_map, biome_map);
 
-            // Create culture map
-            std::vector<std::vector<CultureType>> culture_map(MAP_WIDTH, 
-                                                              std::vector<CultureType>(MAP_HEIGHT, SteppeNomads));
-            assign_cultures(gen.seed, terrain_map, biome_map, culture_map);
+    // Create culture map
+    std::vector<std::vector<CultureType>> culture_map(MAP_WIDTH,
+                                                      std::vector<CultureType>(MAP_HEIGHT, SteppeNomads));
+    assign_cultures(seed, terrain_map, biome_map, culture_map);
 
-            // Create tilemap entity
-            auto tilemap_entity = e.world().entity("TileMap");
-            auto& tilemap = tilemap_entity.ensure<TileMap>();
-            tilemap.tiles.resize(MAP_WIDTH, std::vector<flecs::entity>(MAP_HEIGHT));
+    // Create tilemap entity
+    auto tilemap_entity = ecs.entity("TileMap");
+    auto& tilemap = tilemap_entity.ensure<TileMap>();
+    tilemap.tiles.resize(MAP_WIDTH, std::vector<flecs::entity>(MAP_HEIGHT));
 
-            // Create province entities for each tile
-            for (int x = 0; x < MAP_WIDTH; ++x) {
-                for (int y = 0; y < MAP_HEIGHT; ++y) {
-                    auto tile = e.world().entity()
-                        .child_of(tilemap_entity);
+    // Create province entities for each tile
+    for (int x = 0; x < MAP_WIDTH; ++x) {
+        for (int y = 0; y < MAP_HEIGHT; ++y) {
+            auto tile = ecs.entity().child_of(tilemap_entity);
 
-                    auto& province = tile.ensure<Province>();
-                    province.mPosX = x;
-                    province.mPosY = y;
-                    province.name = "Province_" + std::to_string(x) + "_" + std::to_string(y);
-                    province.terrain = terrain_map[x][y];
-                    province.biome = biome_map[x][y];
-                    province.development = (terrain_map[x][y] != Sea) ? 10 : 0;
-                    province.control = (terrain_map[x][y] != Sea) ? 100 : 0;
+            auto& province = tile.ensure<Province>();
+            province.mPosX = x;
+            province.mPosY = y;
+            province.name = "Province_" + std::to_string(x) + "_" + std::to_string(y);
+            province.terrain = terrain_map[x][y];
+            province.biome = biome_map[x][y];
+            province.development = (terrain_map[x][y] != Sea) ? 10 : 0;
+            province.control = (terrain_map[x][y] != Sea) ? 100 : 0;
 
-                    province.culture = culture_map[x][y];
+            province.culture = culture_map[x][y];
 
-                    province.movement_cost = 30
-                        +  15 * (province.terrain == Plains)
-                        +  15 * (province.terrain == Mountains)
-                        +  15 * (province.roads_level == 0 && (province.biome == Forests || province.biome == Jungles))
-                        -  5 * province.roads_level;
+            province.movement_cost = 30
+                +  15 * (province.terrain == Plains)
+                +  15 * (province.terrain == Mountains)
+                +  15 * (province.roads_level == 0 && (province.biome == Forests || province.biome == Jungles))
+                -  5 * province.roads_level;
 
-                    auto& tile_data = tile.ensure<TileData>();
-                    tile_data.x = x;
-                    tile_data.y = y;
-                    tile_data.height_value = height_map[x][y];
+            auto& tile_data = tile.ensure<TileData>();
+            tile_data.x = x;
+            tile_data.y = y;
+            tile_data.height_value = height_map[x][y];
 
-                    if (terrain_map[x][y] != Sea) {
-                        auto& culture_data = tile.ensure<CultureData>();
-                        culture_data.culture = culture_map[x][y];
-                    }
-
-                    tilemap.tiles[x][y] = tile;
-                }
+            if (terrain_map[x][y] != Sea) {
+                auto& culture_data = tile.ensure<CultureData>();
+                culture_data.culture = culture_map[x][y];
             }
 
-            // Remove the GenerateMap component after generation
-            e.destruct();
+            tilemap.tiles[x][y] = tile;
+        }
+    }
 
-            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Map Generated Successfully");
-        });
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Map Generated Successfully");
 }

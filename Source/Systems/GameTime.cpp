@@ -6,9 +6,7 @@
 
 void DoGameTimeSystems(const flecs::world& ecs, flecs::timer tickTimer)
 {
-    void(ecs.component<GameTime>()
-        .add(flecs::Singleton)
-        .add<GameTime>());
+    void(ecs.component<GameTime>().add(flecs::Singleton));
 
     // Advances the game time by the set speed
     ecs.system<GameTime, const GameTickSources>()
