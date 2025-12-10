@@ -13,6 +13,40 @@
 
 constexpr float TILE_SIZE_WORLD = 32.0f;
 
+void renderPoliticalMap(flecs::iter &it)
+{
+    while (it.next())
+    {
+        const auto &renderer = it.field_at<const Renderer>(2, 0);
+        const auto &camera = it.field_at<const Camera>(3, 0);
+        const auto &window = it.field_at<const Window>(4, 0);
+
+        const auto &shader = renderer.mPoliticalShader;
+        const auto &verts = renderer.mSpriteVerts;
+        shader->SetActive();
+        verts->SetActive();
+
+        const auto &provinces = it.field<const Province>(0);
+        const auto &title = it.field_at<const Title>(1, 0);
+
+        for (size_t i: it)
+        {
+            const auto &province = provinces[i];
+            glm::mat4 model = glm::translate(
+                            glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f) * TILE_SIZE_WORLD),
+                            glm::vec3(province.mPosX, province.mPosY, 0.0f));
+
+            shader->SetMatrixUniform("uView", camera.mView);
+            shader->SetMatrixUniform("uProj", camera.CalculateProjection(window));
+            shader->SetMatrixUniform("uModel", model);
+            shader->SetVectorUniform("uRealmColor", glm::vec4(title.color, 0.7));
+            shader->SetVectorUniform("uMousePos", window.GetMousePosNDC());
+
+            glDrawElements(GL_TRIANGLES, verts->GetNumIndices(), GL_UNSIGNED_INT, 0);
+        }
+    }
+}
+
 void RenderTileMap(flecs::iter &it)
 {
     while (it.next())
@@ -94,6 +128,16 @@ void DoRenderTileMapSystem(const flecs::world &ecs)
         .run([=](flecs::iter &it)
         {
             RenderTileMap(it);
+        });
+
+    ecs.system<const Province, const Title, const Renderer, const Camera, const Window>("RenderPoliticalMap")
+        .term_at(1).src("$title")
+        .with<InRealm>("$title")
+        .without<InRealm>(flecs::Wildcard).src("$title")
+        .kind(flecs::PreStore)
+        .run([=](flecs::iter &it)
+        {
+            renderPoliticalMap(it);
         });
 
     ecs.system<const Province, const Camera, const Window>("SetHoveredProvince")

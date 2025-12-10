@@ -1,17 +1,14 @@
 
-#include "GameUI.hpp"
+#include "GameUIModule.hpp"
 #include <imgui.h>
 
+#include "PauseMenu.hpp"
 #include "Components/Dynasty.hpp"
 #include "Systems/GameBoard.hpp"
 #include "Systems/Characters.hpp"
 #include "Systems/EstatePower.hpp" // Adicionar este include
 #include "Renderer/Renderer.hpp"
 #include "Renderer/Texture.hpp"
-
-static flecs::entity GetEntityByName(const flecs::world& ecs, const std::string& name) {
-    return ecs.lookup(name.c_str());
-}
 
 // Variáveis para o popup do personagem
 static Texture* characterTexture = nullptr;
@@ -83,8 +80,39 @@ static ImU32 GetPowerColor(int power) {
     return IM_COL32(200, 50, 50, 255);                     // Vermelho - muito desfavorável
 }
 
-TestUIModule::TestUIModule(flecs::world& ecs) {
+GameUIModule::GameUIModule(flecs::world& ecs) {
     const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
+
+    void(ecs.entity<GameStarted>().add(flecs::Singleton));
+    void(ecs.entity<GameEnded>().add(flecs::Singleton));
+
+    const auto playerCapital = ecs.query_builder<const Province>("PlayerCapital")
+        .term_at(0).src("$province")
+        .with<CapitalOf>("$title").src("$province")
+        .with<RulerOf>("$title")
+        .with<Player>()
+        .build();
+    ecs.system<Camera, GameTickSources>("SetupGame")
+        .with<GameStarted>()
+        .immediate()
+        .each([=](flecs::iter &it, size_t, Camera &camera, GameTickSources &tickSources)
+        {
+            const auto &ecs = it.world();
+
+            ecs.defer_suspend();
+
+            CreateKingdoms(ecs);
+            tickSources.mTickTimer.start();
+
+            playerCapital.each([&](const Province &capital)
+            {
+                camera.mTarget = glm::vec2(capital.mPosX, capital.mPosY) * 32.0f;
+            });
+
+            ecs.defer_resume();
+
+            void(ecs.remove<GameStarted>());
+        });
 
     ecs.system<GameTickSources>("UpdateUI")
         .tick_source(tickTimer)
@@ -94,12 +122,12 @@ TestUIModule::TestUIModule(flecs::world& ecs) {
         });
 }
 
-void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSources) {
+void GameUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSources) {
     auto input = ecs.try_get<InputState>();
     if (input && input->WasEscapePressed) {
         tickSources.mTickTimer.stop();
-        auto pauseMenuEntity = GetEntityByName(ecs, "PauseMenuModule");
-        auto testUIEntity = GetEntityByName(ecs, "TestUIModule");
+        auto pauseMenuEntity = ecs.entity<PauseMenuModule>();
+        auto testUIEntity = ecs.entity<GameUIModule>();
 
         if (pauseMenuEntity.is_valid()) pauseMenuEntity.enable();
         if (testUIEntity.is_valid()) testUIEntity.disable();
@@ -119,6 +147,10 @@ void TestUIModule::ShowTestUI(const flecs::world& ecs, GameTickSources& tickSour
     if (ImGui::Begin("Menu")) {
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)",
                    1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Separator();
+
+        const auto &cameraTarget = ecs.get<Camera>().mTarget;
+        ImGui::Text("Camera target: %.2f %.2f", cameraTarget.x, cameraTarget.y);
         ImGui::Separator();
 
         glm::vec2 mPos;

@@ -16,7 +16,7 @@
 // TODO: make random deterministic
 #include "GameTime.hpp"
 #include "Random.hpp"
-#include "UI/UIScreens/GameUI.hpp"
+#include "UI/UIScreens/GameUIModule.hpp"
 
 struct EntityHandler {
     flecs::entity ruler;
@@ -143,7 +143,10 @@ EntityHandler CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer)
 
     auto dynasty = ecs.entity().set<Dynasty>({ dName });
 
-    auto kingdom = ecs.entity().set<Title>({ dName + " Kingdom" });
+    auto kingdom = ecs.entity().set<Title>({
+        .name = dName + " Kingdom",
+        .color = glm::vec3(Random::GetFloat(), Random::GetFloat(), Random::GetFloat()),
+    });
     auto culture = GenCulture();
 
     void(dynasty.set<CharacterCulture>(CharacterCulture { culture }));
@@ -151,7 +154,7 @@ EntityHandler CharacterBuilder::CreateDynastyWithKingdomAndFamily(bool isPlayer)
 
     auto rulerName = GenMaleName();
     auto ruler = CreateCharacter(rulerName, dynasty, true, isPlayer ? ecs.entity<Player>() : ecs.entity(), culture)
-    .add<DynastyHead>(dynasty).add<CharacterCulture>(culture);
+        .add<DynastyHead>(dynasty).add<CharacterCulture>(culture);
     void(kingdom.add<RuledBy>(ruler));
 
     void(ruler.add<RulerOf>(kingdom));
@@ -193,6 +196,8 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
 {
     const flecs::entity tickTimer = ecs.get<GameTickSources>().mTickTimer;
 
+    void(ecs.entity<Player>().add<Player>());
+
     DoCreateCharacterBuilder(ecs);
 
     void(ecs.component<ShowCharacterDetails>()
@@ -211,7 +216,7 @@ CharactersModule::CharactersModule(const flecs::world& ecs)
         .add(flecs::With, ecs.component<DynastyMember>())
         .add(flecs::Exclusive)
         .add(flecs::Symmetric));
-    void(ecs.component<InRealm>().add(flecs::Exclusive).add(flecs::Transitive));
+    void(ecs.component<InRealm>().add(flecs::Acyclic).add(flecs::Exclusive).add(flecs::Transitive));
 
     // 3. Initialize Cached Queries
 

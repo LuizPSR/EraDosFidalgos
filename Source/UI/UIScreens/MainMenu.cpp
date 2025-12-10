@@ -2,17 +2,13 @@
 #include <imgui.h>
 #include <string>
 #include <SDL3/SDL.h>
+
+#include "GameUIModule.hpp"
+#include "Components/Camera.hpp"
 #include "Renderer/Renderer.hpp"
 #include "Renderer/Texture.hpp"
 #include "Systems/Characters.hpp"
-
-static bool HorizontalButton(const char* label, const ImVec2& size_arg = ImVec2(-FLT_MIN, 0)) {
-    return ImGui::Button(label, size_arg);
-}
-
-static flecs::entity GetEntityByName(const flecs::world& ecs, const std::string& name) {
-    return ecs.lookup(name.c_str());
-}
+#include "UI/GameOver.hpp"
 
 // Variável global para a textura de background
 static Texture* backgroundTexture = nullptr;
@@ -156,15 +152,13 @@ void MainMenuModule::ShowMainMenu(const flecs::world& ecs, GameTickSources& tick
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 250) * 0.5f);
         if (ImGui::Button("START", ImVec2(250, 38))) {
             auto mainMenuEntity = ecs.entity<MainMenuModule>();
-            auto testUIEntity = GetEntityByName(ecs, "TestUIModule")
-            auto gameOverEntity = GetEntityByName(ecs, "GameOverModule");;
+            auto gameUIEntity = ecs.entity<GameUIModule>();
+            auto gameOverEntity = ecs.entity<GameOverModule>();
 
-            if (mainMenuEntity.is_valid()) mainMenuEntity.disable();
-            if (testUIEntity.is_valid()) testUIEntity.enable();
+            if (mainMenuEntity.is_valid()) void(mainMenuEntity.disable());
+            if (gameUIEntity.is_valid()) void(gameUIEntity.enable());
             if (gameOverEntity.is_valid()) gameOverEntity.disable();
-            CreateKingdoms(ecs);
-
-            tickSources.mTickTimer.start();
+            ecs.add<GameStarted>();
         }
 
         ImGui::Spacing();

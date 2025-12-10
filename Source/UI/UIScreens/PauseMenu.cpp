@@ -3,12 +3,10 @@
 #include <imgui.h>
 #include <string>
 
+#include "GameUIModule.hpp"
+
 static bool HorizontalButton(const char* label, const ImVec2& size_arg = ImVec2(-FLT_MIN, 30.0f)) {
     return ImGui::Button(label, size_arg);
-}
-
-static flecs::entity GetEntityByName(const flecs::world& ecs, const std::string& name) {
-    return ecs.lookup(name.c_str());
 }
 
 PauseMenuModule::PauseMenuModule(flecs::world& ecs) {
@@ -65,8 +63,8 @@ void PauseMenuModule::ShowPauseMenu(const flecs::world& ecs, GameTickSources& ti
 
     if (ImGui::Begin("Paused", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
         if (HorizontalButton("Resume") || input.WasEscapePressed) {
-            auto pauseMenuEntity = GetEntityByName(ecs, "PauseMenuModule");
-            auto testUIEntity = GetEntityByName(ecs, "TestUIModule");
+            auto pauseMenuEntity = ecs.entity<PauseMenuModule>();
+            auto testUIEntity = ecs.entity<GameUIModule>();
 
             if (pauseMenuEntity.is_valid()) pauseMenuEntity.disable();
             if (testUIEntity.is_valid()) testUIEntity.enable();
@@ -74,8 +72,8 @@ void PauseMenuModule::ShowPauseMenu(const flecs::world& ecs, GameTickSources& ti
         }
 
         if (HorizontalButton("Quit")) {
-            auto testUIEntity = GetEntityByName(ecs, "TestUIModule");
-            auto pauseMenuEntity = GetEntityByName(ecs, "PauseMenuModule");
+            auto testUIEntity = ecs.entity<GameUIModule>();
+            auto pauseMenuEntity = ecs.entity<PauseMenuModule>();
             auto mainMenuEntity = ecs.entity<MainMenuModule>();
 
             if (testUIEntity.is_valid()) testUIEntity.disable();

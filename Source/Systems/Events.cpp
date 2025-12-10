@@ -333,7 +333,7 @@ void DoGameOverEvents(const flecs::world& ecs, const GameTickSources& timers)
         });
 }
 
-EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
+EventsModule::EventsModule(const flecs::world& ecs)
 {
     const auto &timers = ecs.get<GameTickSources>();
 
@@ -347,15 +347,9 @@ EventsSampleScene::EventsSampleScene(const flecs::world& ecs)
 
     DoSamplePopupSystem(ecs, timers.mTickTimer);
 
-
     DoCharacterAgingSystem(ecs, timers);
 
     DoEstatePowerSystems(ecs, timers);
 
     DoGameOverEvents(ecs, timers);
-
-    InitializeEntities(ecs);
 }
-
-void EventsSampleScene::InitializeEntities(const flecs::world& ecs)
-{}

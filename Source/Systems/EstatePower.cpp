@@ -105,17 +105,17 @@ void DoEstatePowerSystems(const flecs::world& ecs, const GameTickSources& timers
                     if (ImGui::BeginItemTooltip())
                     {
                         ImGui::Text("Custo: %.2f", choice.FloatCost());
-                        for (const auto &[estate, change]: choice.mPowerChanges)
-                        {
-                            std::string estateString;
-                            switch (estate)
-                            {
-                            case SocialEstate::Commoners: estateString = "Plebe"; break;
-                            case SocialEstate::Nobility: estateString = "Nobreza"; break;
-                            case SocialEstate::Clergy: estateString = "Clero"; break;
-                            }
-                            ImGui::Text("%s: %d", estateString.data(), change);
-                        }
+                        // for (const auto &[estate, change]: choice.mPowerChanges)
+                        // {
+                        //     std::string estateString;
+                        //     switch (estate)
+                        //     {
+                        //     case SocialEstate::Commoners: estateString = "Plebe"; break;
+                        //     case SocialEstate::Nobility: estateString = "Nobreza"; break;
+                        //     case SocialEstate::Clergy: estateString = "Clero"; break;
+                        //     }
+                        //     ImGui::Text("%s: %d", estateString.data(), change);
+                        // }
                         ImGui::EndTooltip();
                     }
                 }

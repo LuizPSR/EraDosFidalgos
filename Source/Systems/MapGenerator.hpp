@@ -1,12 +1,14 @@
 #pragma once
 
 #include <flecs.h>
+#include <SDL3/SDL.h>
 #include <vector>
 #include <array>
 #include <cmath>
 #include <random>
 #include <queue>
 #include <algorithm>
+
 #include "Components/Province.hpp"
 #include "Components/Culture.hpp"
 #include <SDL3/SDL.h>

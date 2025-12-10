@@ -44,18 +44,13 @@ void GatherProvinceRevenue(const flecs::world& ecs, const GameTickSources &timer
 }
 
 void UpdateDistanceToCapital(const flecs::world& ecs, const GameTickSources &timers) {
-    // We need the TileMap to traverse the grid
-    const auto tileMapEntity = ecs.lookup("TileMap");
-    if (!tileMapEntity.is_valid()) return;
-    const auto& tileMap = tileMapEntity.get<TileMap>();
-
     // Query all Titles (Kingdoms, Duchies, etc.)
     const auto qTitles = ecs.query<const Title>();
 
-    ecs.system<>("ReCalculateDistancesToCapital")
+    ecs.system<const TileMap>("ReCalculateDistancesToCapital")
         .kind(flecs::PreUpdate)
-        .tick_source(timers.mMonthTimer) // Update yearly or on demand is usually sufficient
-        .run([=](flecs::iter& it) {
+        .tick_source(timers.mMonthTimer)
+        .each([=](flecs::iter& it, size_t, const TileMap &tileMap) {
             const auto& world = it.world();
 
             qTitles.each([&](flecs::entity titleEntity, const Title& title) {
@@ -202,45 +197,41 @@ void UpdateStats(const flecs::world& ecs, const GameTickSources &timers) {
                 clergyMod = (estates.mClergyPower + ESTATE_EFFECT_THRESHOLD);
             }
 
-            ecs.query_builder<CharacterCulture>()
-                .with<Player>()
-                .build()
-                .each([&](flecs::entity t, CharacterCulture& culture) {
-                    auto rulerCulture = culture.culture;
-                    auto rulerTraits = GetCulturalTraits(rulerCulture);
+            auto player = ecs.entity<Player>();
+            auto rulerCulture = player.get<CharacterCulture>().culture;
+            auto rulerTraits = GetCulturalTraits(rulerCulture);
 
-                    for (auto p: provinces) {
+            for (auto p: provinces) {
 
-                        p.popular_opinion =
-                            std::clamp(
-                                5.f * p.temples_level
-                                + clergyMod
-                                - 25 * (p.culture != rulerCulture)
+                p.popular_opinion =
+                    std::clamp(
+                        5.f * p.temples_level
+                        + clergyMod
+                        - 25 * (p.culture != rulerCulture)
 
-                                , 0.0f, 100.0f
-                            );
+                        , 0.0f, 100.0f
+                    );
 
 
 
-                        p.control =
-                            std::clamp(
-                                100
-                                + 10 * p.fortification_level
-                                + 10 * (rulerTraits.extra_control)
-                                + nobilityMod
-                                - p.distance_to_capital
-                                + p.popular_opinion * (p.popular_opinion < 0)
+                p.control =
+                    std::clamp(
+                        100
+                        + 10 * p.fortification_level
+                        + 10 * (rulerTraits.extra_control)
+                        + nobilityMod
+                        - p.distance_to_capital
+                        + p.popular_opinion * (p.popular_opinion < 0)
 
-                                , 0.f, 100.f
-                            );
+                        , 0.f, 100.f
+                    );
 
-                        p.movement_cost = 30
-                            +  15 * (p.terrain == Plains)
-                            +  15 * (p.terrain == Mountains)
-                            +  15 * (p.roads_level == 0 && (p.biome == Forests || p.biome == Jungles))
-                            -  5 * p.roads_level;
-                    }
-                });
+                p.movement_cost = 30
+                    +  15 * (p.terrain == Plains)
+                    +  15 * (p.terrain == Mountains)
+                    +  15 * (p.roads_level == 0 && (p.biome == Forests || p.biome == Jungles))
+                    -  5 * p.roads_level;
+            }
         });
 }
 
@@ -250,5 +241,4 @@ ProvinceUpdates::ProvinceUpdates(flecs::world &ecs) {
     GatherProvinceRevenue(ecs, timers);
     UpdateDistanceToCapital(ecs, timers);
     UpdateStats(ecs, timers);
-
 }

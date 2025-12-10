@@ -1,0 +1,56 @@
+[[event]]
+id = "border_dispute"
+title = "Disputa de Fronteira"
+message = """
+Mensageiros do $neighbor_kingdom$, governado por $neighbor_ruler$, chegaram à corte do $kingdom_name$ com uma queixa formal. Eles alegam que uma seção de nossa fronteira não está sendo respeitada, e que colonos do $kingdom_name$ invadiram suas terras. $neighbor_ruler$ exige que retiremos imediatamente nossos colonos e paguemos uma indenização, sob pena de retaliação. Como $player_name$, como iremos responder a esta provocação?
+"""
+
+[[event.option]]
+text = "Rejeitar a queixa veementemente e reforçar a fronteira. Nossas terras são nossas."
+relation_change = -50  # Forte deterioração das relações.
+
+[[event.option]]
+text = "Abrir uma mesa de negociação, propondo uma pequena concessão territorial em troca de um acordo comercial."
+relation_change = 25  # Melhoria moderada, disposta a ceder.
+
+[[event.option]]
+text = "Concordar com a exigência de $neighbor_ruler$ para evitar um conflito, mas sem pagar indenização."
+relation_change = -10  # Leve deterioração. Mostra fraqueza, mas evita conflito imediato.
+
+[[event]]
+id = "royal_marriage_proposal"
+title = "Proposta de Casamento Real"
+message = """
+Um emissário de $neighbor_ruler$ do $neighbor_kingdom$ chegou com uma proposta surpreendente: um casamento entre um membro da família real do $kingdom_name$ e um de seus herdeiros. $neighbor_ruler$ vê isso como a chance de cimentar uma aliança duradoura entre nossos reinos e garantir a paz mútua. Aceitar tal proposta seria um grande passo diplomático para $player_name$. O que decidimos?
+"""
+
+[[event.option]]
+text = "Aceitar o casamento de bom grado. Uma aliança familiar vale o risco."
+relation_change = 70  # Grande melhoria. Laços de sangue são fortes.
+
+[[event.option]]
+text = "Rejeitar a proposta com diplomacia, alegando que ainda não é o momento certo para tal união."
+relation_change = 5  # Leve melhoria/manutenção. Não ofende, mas perde a chance.
+
+[[event.option]]
+text = "Rejeitar a proposta categoricamente, vendo isso como uma tentativa de influência."
+relation_change = -40  # Deterioração significativa. Recusa vista como desconfiança.
+
+[[event]]
+id = "aid_request_famine"
+title = "Pedido de Ajuda por Fome"
+message = """
+Uma terrível fome atingiu o $neighbor_kingdom$. $neighbor_ruler$ enviou uma mensagem desesperada a $player_name$ do $kingdom_name$, suplicando por suprimentos de grãos para salvar seu povo. Nosso reino tem o suficiente para ajudar, mas isso irá esgotar parte de nossas reservas de inverno. Como responderemos à miséria de nosso vizinho?
+"""
+
+[[event.option]]
+text = "Enviar uma grande parte de nossas reservas imediatamente, mostrando grande generosidade e compaixão."
+relation_change = 60  # Melhoria substancial. Ações altruístas durante crises.
+
+[[event.option]]
+text = "Vender uma pequena quantidade de grãos a um preço alto, lucrando com a necessidade deles."
+relation_change = -75  # Forte deterioração. Visto como exploração em tempos de necessidade.
+
+[[event.option]]
+text = "Recusar o pedido, alegando que devemos preservar nossas próprias reservas acima de tudo."
+relation_change = -20  # Deterioração moderada. Não é explorador, mas é insensível.
