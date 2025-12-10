@@ -86,30 +86,31 @@ GameUIModule::GameUIModule(flecs::world& ecs) {
     void(ecs.entity<GameStarted>().add(flecs::Singleton));
     void(ecs.entity<GameEnded>().add(flecs::Singleton));
 
-    struct InitCamera {};
-    void(ecs.component<InitCamera>().add(flecs::Singleton));
-    ecs.system<Camera, const Province>("CameraStartAtCapital")
-        .term_at(1).src("$province")
+    const auto playerCapital = ecs.query_builder<const Province>("PlayerCapital")
+        .term_at(0).src("$province")
         .with<CapitalOf>("$title").src("$province")
         .with<RulerOf>("$title")
         .with<Player>()
-        .with<InitCamera>()
-        .each([=](flecs::iter &it, size_t, Camera &camera, const Province &capital)
-        {
-            camera.mTarget = glm::vec2(capital.mPosX, capital.mPosY) * 32.0f;
-            it.world().remove<InitCamera>();
-        });
-    ecs.system<GameTickSources>("SetupGame")
+        .build();
+    ecs.system<Camera, GameTickSources>("SetupGame")
         .with<GameStarted>()
-        .each([=](flecs::iter &it, size_t i, GameTickSources &tickSources)
+        .immediate()
+        .each([=](flecs::iter &it, size_t, Camera &camera, GameTickSources &tickSources)
         {
             const auto &ecs = it.world();
 
-            CreateKingdoms(ecs);
+            ecs.defer_suspend();
 
+            CreateKingdoms(ecs);
             tickSources.mTickTimer.start();
 
-            void(ecs.add<InitCamera>());
+            playerCapital.each([&](const Province &capital)
+            {
+                camera.mTarget = glm::vec2(capital.mPosX, capital.mPosY) * 32.0f;
+            });
+
+            ecs.defer_resume();
+
             void(ecs.remove<GameStarted>());
         });
 

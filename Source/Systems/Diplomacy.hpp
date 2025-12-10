@@ -27,6 +27,8 @@ struct DiploEvent
     std::string mTitle;
     std::string mMessage;
     std::vector<DiploEventChoice> mChoices;
+    flecs::entity mSourceRealm;
+    flecs::entity mTargetRealm;
 };
 
 struct Neighboring {};

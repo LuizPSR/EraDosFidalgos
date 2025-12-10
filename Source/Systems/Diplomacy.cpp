@@ -56,8 +56,7 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
         .tick_source(timers.mMonthTimer)
         .each([=](flecs::iter &it, size_t, const Title &a, const Title &b)
         {
-            // TODO: choose an event chance
-            // if (Random::GetFloat() >= 0.2f) return;
+            if (Random::GetFloat() >= 0.2f) return;
             const auto *eventsArray = eventsTbl["event"].as_array();
             size_t idx = Random::GetIntRange(0, eventsArray->size() - 1);
             const auto &tbl = *eventsArray->get_as<toml::table>(idx);
@@ -75,6 +74,8 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
                     .mTitle = tbl["title"].as_string()->get(),
                     .mMessage = tbl["message"].as_string()->get(),
                     .mChoices = choices,
+                    .mSourceRealm = it.get_var("realm"),
+                    .mTargetRealm = it.get_var("neighbor")
                 });
         }));
 
@@ -90,11 +91,13 @@ DiplomacyModule::DiplomacyModule(const flecs::world& ecs)
                 {
                     if (ImGui::Button(choice.mText.data()))
                     {
-                        // TODO
+                        auto &relation = event.mSourceRealm.ensure<RealmRelation>(event.mTargetRealm);
+                        relation.relations += std::clamp((int)relation.relations + choice.mRelationChange, -128, 127);;
                         entity.destruct();
                     }
                     if (ImGui::BeginItemTooltip())
                     {
+                        ImGui::Text("Relações: %d", choice.mRelationChange);
                         ImGui::EndTooltip();
                     }
                 }
